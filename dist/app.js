@@ -730,13 +730,16 @@ function createCardElement(card, { hidden = false, button = false, selected = fa
     node.append(pattern);
     return node;
   }
-  const rank = document.createElement("span");
-  rank.className = "card-rank";
-  rank.innerHTML = `<span>${RANKS[card.rank]}</span><span>${suitInfo(card).symbol}</span>`;
-  const suit = document.createElement("span");
-  suit.className = "card-suit";
-  suit.textContent = suitInfo(card).symbol;
-  node.append(rank, suit);
+  const index = document.createElement("span");
+  index.className = "card-index card-index-top";
+  index.innerHTML = `<span class="card-value">${RANKS[card.rank]}</span><span class="card-index-suit">${suitInfo(card).symbol}</span>`;
+  const pip = document.createElement("span");
+  pip.className = "card-pip";
+  pip.textContent = suitInfo(card).symbol;
+  const reverseIndex = document.createElement("span");
+  reverseIndex.className = "card-index card-index-bottom";
+  reverseIndex.innerHTML = `<span class="card-value">${RANKS[card.rank]}</span><span class="card-index-suit">${suitInfo(card).symbol}</span>`;
+  node.append(index, pip, reverseIndex);
   return node;
 }
 

@@ -261,12 +261,13 @@ select:hover {
   flex: 0 0 var(--card-width);
   width: var(--card-width);
   height: var(--card-height);
-  padding: 7px;
-  border: 1px solid rgba(0, 0, 0, 0.24);
-  border-radius: 8px;
-  background: #fffdf7;
-  box-shadow: 0 5px 13px rgba(0, 0, 0, 0.2);
-  color: #101010;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid #d3d0c8;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #fff 0%, #f7f5ef 100%);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.24), inset 0 0 0 1px rgba(255, 255, 255, 0.9);
+  color: #1b2635;
   user-select: none;
 }
 
@@ -290,20 +291,50 @@ button.card.selected {
   color: #ca2f35;
 }
 
-.card-rank {
-  display: flex;
-  flex-direction: column;
+.card-index {
+  position: absolute;
+  z-index: 1;
+  display: grid;
+  justify-items: center;
+  min-width: 18px;
   align-items: center;
-  font-family: Georgia, serif;
-  font-size: calc(var(--card-width) * 0.28);
-  font-weight: 800;
-  line-height: 0.9;
+  font-family: "Arial Narrow", Arial, sans-serif;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  line-height: .78;
+  letter-spacing: -.05em;
 }
 
-.card-suit {
-  font-size: calc(var(--card-width) * 0.62);
+.card-index-top {
+  top: 7%;
+  left: 8%;
+}
+
+.card-index-bottom {
+  right: 8%;
+  bottom: 7%;
+  rotate: 180deg;
+}
+
+.card-value {
+  font-size: calc(var(--card-width) * .25);
+}
+
+.card-index-suit {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: calc(var(--card-width) * .18);
   line-height: 1;
-  margin: auto;
+}
+
+.card-pip {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: calc(var(--card-width) * .60);
+  line-height: 1;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, .7);
 }
 
 .card-back {
@@ -1321,16 +1352,24 @@ button.card.selected {
   box-shadow: inset 0 0 0 2px #8c9290, 0 2px 3px rgba(0, 0, 0, 0.25);
 }
 
-.player-hand .card-rank,
-.table-center .card-rank {
-  align-items: flex-start;
-  font-size: calc(var(--card-width) * 0.3);
-  line-height: .88;
+.player-hand .card-index,
+.table-center .card-index {
+  min-width: 0;
 }
 
-.player-hand .card-suit,
-.table-center .card-suit {
-  font-size: calc(var(--card-width) * 0.55);
+.player-hand .card-value,
+.table-center .card-value {
+  font-size: calc(var(--card-width) * .25);
+}
+
+.player-hand .card-index-suit,
+.table-center .card-index-suit {
+  font-size: calc(var(--card-width) * .18);
+}
+
+.player-hand .card-pip,
+.table-center .card-pip {
+  font-size: calc(var(--card-width) * .58);
 }
 
 .move-actions {
