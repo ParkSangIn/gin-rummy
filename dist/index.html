@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#101916" />
+    <meta
+      name="description"
+      content="AI와 진러미를 두고, 내 선택과 AI 추천이 달랐던 장면을 집중해서 복기합니다."
+    />
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23101916'/%3E%3Cpath d='M32 10C25 21 15 25 15 36c0 7 5 12 11 12 3 0 5-1 7-3-1 5-4 8-7 10h12c-4-2-6-5-7-10 2 2 4 3 7 3 6 0 11-5 11-12 0-11-10-15-17-26z' fill='%23f5f1e8'/%3E%3C/svg%3E"
+    />
+    <title>Gin Lab AI</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <button class="brand" id="brand-button" aria-label="새 대국 시작">
+        <span class="brand-mark">♠</span>
+        <span>GIN LAB</span>
+      </button>
+      <nav class="view-tabs" aria-label="화면 선택">
+        <button class="tab-button active" data-view="game">대국</button>
+        <button class="tab-button" data-view="review">AI 복기 <span id="review-count" class="count-badge">0</span></button>
+      </nav>
+      <div class="top-actions">
+        <label class="difficulty-label" for="difficulty">AI</label>
+        <select id="difficulty" aria-label="AI 난이도">
+          <option value="easy">입문</option>
+          <option value="medium">중급</option>
+          <option value="strong" selected>강한 AI</option>
+        </select>
+        <button id="new-match" class="quiet-button">새 대국</button>
+      </div>
+    </header>
+
+    <main>
+      <section id="game-view" class="view active" aria-label="진러미 대국">
+        <div class="game-layout">
+          <section class="game-board" aria-label="게임판">
+            <div class="opponent-zone player-zone">
+              <div class="seat-label">
+                <span class="status-dot" id="ai-status-dot"></span>
+                <strong>GIN AI</strong>
+                <span id="ai-deadwood" class="muted"></span>
+              </div>
+              <div id="ai-hand" class="hand opponent-hand" aria-label="AI 패"></div>
+            </div>
+
+            <div class="table-center">
+              <button id="stock-pile" class="pile-button" aria-label="덱에서 카드 뽑기">
+                <span class="card card-back"><span class="back-pattern">♠</span></span>
+                <span id="stock-count" class="pile-label"></span>
+              </button>
+              <div class="turn-panel" aria-live="polite">
+                <span id="turn-kicker">YOUR TURN</span>
+                <strong id="turn-message">카드를 한 장 가져오세요</strong>
+                <span id="turn-detail">덱 또는 버림패를 선택할 수 있습니다.</span>
+              </div>
+              <button id="discard-pile" class="pile-button" aria-label="버림패 가져오기">
+                <span id="discard-card"></span>
+                <span class="pile-label">버림패</span>
+              </button>
+            </div>
+
+            <div class="player-zone human-zone">
+              <div class="seat-label">
+                <span class="status-dot" id="player-status-dot"></span>
+                <strong>YOU</strong>
+                <span id="player-deadwood" class="deadwood-pill">데드우드 0</span>
+              </div>
+              <div id="player-hand" class="hand player-hand" aria-label="내 패"></div>
+              <div class="move-actions">
+                <button id="discard-action" class="primary-button" disabled>선택한 카드 버리기</button>
+                <button id="knock-action" class="knock-button" disabled>버리고 노크</button>
+              </div>
+            </div>
+
+            <div id="result-overlay" class="result-overlay" hidden>
+              <div class="result-card">
+                <span id="result-kicker" class="eyebrow">HAND COMPLETE</span>
+                <h2 id="result-title">결과</h2>
+                <p id="result-body"></p>
+                <div class="result-actions">
+                  <button id="open-review" class="primary-button">AI 복기 보기</button>
+                  <button id="next-hand" class="quiet-button">다음 핸드</button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <aside class="side-panel">
+            <section class="score-panel">
+              <div>
+                <span class="eyebrow">MATCH TO 100</span>
+                <strong>점수</strong>
+              </div>
+              <div class="score-grid">
+                <div><span>YOU</span><strong id="player-score">0</strong></div>
+                <div><span>AI</span><strong id="ai-score">0</strong></div>
+              </div>
+            </section>
+
+            <section class="coach-panel">
+              <div class="panel-heading">
+                <div>
+                  <span class="eyebrow">LIVE COACH</span>
+                  <strong>현재 판단</strong>
+                </div>
+                <button id="hint-button" class="icon-button" aria-label="현재 수 추천 보기">?</button>
+              </div>
+              <div id="live-coach" class="coach-message">
+                내 선택은 숨긴 채 진행됩니다. 원할 때만 물음표를 눌러 추천을 확인하세요.
+              </div>
+            </section>
+
+            <section class="history-panel">
+              <div class="panel-heading">
+                <div>
+                  <span class="eyebrow">TABLE LOG</span>
+                  <strong>진행 기록</strong>
+                </div>
+                <span id="hand-number" class="hand-number">HAND 1</span>
+              </div>
+              <ol id="game-log" class="game-log"></ol>
+            </section>
+
+            <p class="privacy-note">대국과 복기 기록은 이 기기에만 저장됩니다.</p>
+          </aside>
+        </div>
+      </section>
+
+      <section id="review-view" class="view review-view" aria-label="AI 복기">
+        <div class="review-header">
+          <div>
+            <span class="eyebrow">DECISION REVIEW</span>
+            <h1>선택이 갈린 장면만 공부하기</h1>
+          </div>
+          <label class="filter-toggle">
+            <input id="difference-only" type="checkbox" checked />
+            <span>AI와 다른 선택만</span>
+          </label>
+        </div>
+
+        <div class="summary-grid">
+          <article><span>내 선택</span><strong id="summary-total">0</strong></article>
+          <article><span>AI와 다른 선택</span><strong id="summary-different">0</strong></article>
+          <article><span>평균 평가 손실</span><strong id="summary-loss">0.0</strong></article>
+          <article><span>AI 일치율</span><strong id="summary-agreement">—</strong></article>
+        </div>
+
+        <div class="review-layout">
+          <aside class="decision-list-panel">
+            <div class="list-heading">
+              <strong>의사결정 타임라인</strong>
+              <span id="decision-list-count"></span>
+            </div>
+            <div id="decision-list" class="decision-list"></div>
+          </aside>
+
+          <section id="review-detail" class="review-detail">
+            <div class="empty-review">
+              <span class="empty-icon">♠</span>
+              <h2>아직 복기할 선택이 없습니다</h2>
+              <p>한 수를 두면 AI의 추천과 비교한 기록이 여기에 쌓입니다.</p>
+              <button class="primary-button" data-go-game>대국으로 돌아가기</button>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script src="./app.js"></script>
+  </body>
+</html>
