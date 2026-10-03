@@ -1431,6 +1431,9 @@ button.card.selected {
   border-left: 1px solid #75b5d3;
   background: #9bd0ea;
   color: #17212a;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
 }
 
 .side-panel section {
@@ -1530,8 +1533,50 @@ button.card.selected {
   margin: auto 12px 12px;
 }
 
-.snapshot-hand .card {
-  --card-width: 62px;
+.dealer-badge {
+  padding: 2px 5px;
+  border: 1px solid rgba(238, 248, 241, .48);
+  border-radius: 2px;
+  color: rgba(238, 248, 241, .9);
+  font-family: Arial, sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+
+.history-panel {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.game-log {
+  max-height: none;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+.snapshot-hand {
+  position: relative;
+  display: block;
+  width: min(100%, 660px);
+  height: 210px;
+  margin-top: 12px;
+  padding: 0;
+  overflow: visible;
+}
+
+.snapshot-hand .snapshot-card {
+  --card-width: 72px;
+  position: absolute;
+  height: calc(var(--card-width) * 1.4);
+  border-radius: 3px;
+}
+
+.snapshot-hand .snapshot-card.covered-card .card-pip {
+  visibility: hidden;
 }
 
 @media (max-width: 980px) {

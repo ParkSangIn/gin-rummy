@@ -22,6 +22,8 @@ const el = Object.fromEntries(
     "turn-detail",
     "ai-status-dot",
     "player-status-dot",
+    "ai-dealer",
+    "player-dealer",
     "player-deadwood",
     "ai-deadwood",
     "ai-action-status",
@@ -71,6 +73,7 @@ function freshState() {
     playerScore: 0,
     aiScore: 0,
     handNumber: 0,
+    dealer: "player",
     turn: "player",
     phase: "draw",
     selectedCardId: null,
@@ -369,6 +372,7 @@ function startHand() {
   state.playerScore = scores.player;
   state.aiScore = scores.ai;
   state.handNumber = scores.hand + 1;
+  state.dealer = state.handNumber % 2 ? "player" : "ai";
   state.decisions = previousDecisions;
   state.decisionCounter = previousDecisions.length;
   state.deck = shuffled(makeDeck());
@@ -769,6 +773,21 @@ function renderHands() {
   }
 }
 
+function renderSnapshotHand(container, cards) {
+  container.replaceChildren();
+  const orderedCards = cards.slice().sort((a, b) => FIXED_SUIT_ROWS[a.suit] - FIXED_SUIT_ROWS[b.suit] || a.rank - b.rank);
+  for (const card of orderedCards) {
+    const node = createCardElement(card);
+    const row = FIXED_SUIT_ROWS[card.suit];
+    node.classList.add("snapshot-card");
+    node.classList.toggle("covered-card", cards.some((other) => other.rank === card.rank && FIXED_SUIT_ROWS[other.suit] > row));
+    node.style.top = `${row * 33}px`;
+    node.style.left = `${(card.rank - 1) * 7.4}%`;
+    node.style.zIndex = String(10 + row * 13 + card.rank);
+    container.append(node);
+  }
+}
+
 function renderPiles() {
   el["stock-count"].textContent = `덱 ${state.deck.length}장`;
   el["stock-pile"].disabled = state.gameOver || state.turn !== "player" || state.phase !== "draw";
@@ -781,6 +800,8 @@ function renderTurn() {
   const playerTurn = state.turn === "player" && !state.gameOver;
   el["player-status-dot"].classList.toggle("active", playerTurn);
   el["ai-status-dot"].classList.toggle("active", state.turn === "ai" && !state.gameOver);
+  el["ai-dealer"].hidden = state.dealer !== "ai";
+  el["player-dealer"].hidden = state.dealer !== "player";
   if (state.gameOver) {
     el["turn-kicker"].textContent = "HAND COMPLETE";
     el["turn-message"].textContent = "핸드가 끝났습니다";
@@ -1002,8 +1023,7 @@ function renderReview() {
       }).join("")}
     </div>
     <div class="analysis-note">${reviewExplanation(decision)}</div>`;
-  const snapshot = document.getElementById("snapshot-hand");
-  for (const card of decision.hand) snapshot.append(createCardElement(card));
+  renderSnapshotHand(document.getElementById("snapshot-hand"), decision.hand);
 }
 
 function showToast(message) {
