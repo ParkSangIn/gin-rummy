@@ -736,10 +736,7 @@ function createCardElement(card, { hidden = false, button = false, selected = fa
   const pip = document.createElement("span");
   pip.className = "card-pip";
   pip.textContent = suitInfo(card).symbol;
-  const reverseIndex = document.createElement("span");
-  reverseIndex.className = "card-index card-index-bottom";
-  reverseIndex.innerHTML = `<span class="card-value">${RANKS[card.rank]}</span><span class="card-index-suit">${suitInfo(card).symbol}</span>`;
-  node.append(index, pip, reverseIndex);
+  node.append(index, pip);
   return node;
 }
 
@@ -775,7 +772,7 @@ function renderHands() {
 function renderPiles() {
   el["stock-count"].textContent = `덱 ${state.deck.length}장`;
   el["stock-pile"].disabled = state.gameOver || state.turn !== "player" || state.phase !== "draw";
-  el["discard-pile"].disabled = state.gameOver || state.turn !== "player" || state.phase !== "draw" || !state.discard.length;
+  el["discard-pile"].disabled = state.gameOver || state.turn !== "player" || !["draw", "upcard"].includes(state.phase) || !state.discard.length;
   const top = state.discard.at(-1);
   el["discard-card"].replaceChildren(top ? createCardElement(top) : document.createTextNode("비어 있음"));
 }
@@ -795,7 +792,7 @@ function renderTurn() {
   } else if (state.phase === "upcard") {
     el["turn-kicker"].textContent = "UPCARD";
     el["turn-message"].textContent = `첫 버림패 ${cardLabel(state.discard.at(-1))}를 가져올까요?`;
-    el["turn-detail"].textContent = "OK는 가져오기, PASS는 AI에게 선택을 넘깁니다.";
+    el["turn-detail"].textContent = "버림패를 누르면 가져옵니다. 가져가지 않으면 PASS를 누르세요.";
   } else if (state.phase === "draw") {
     el["turn-kicker"].textContent = "YOUR TURN";
     el["turn-message"].textContent = "카드를 한 장 가져오세요";
@@ -811,7 +808,7 @@ function renderActions() {
   const canChooseUpcard = state.turn === "player" && state.phase === "upcard" && !state.gameOver;
   const canKnock = state.turn === "player" && state.phase === "discard" && !state.gameOver
     && state.playerHand.some((card) => card.id !== state.forbiddenDiscardId && evaluateHand(state.playerHand.filter((item) => item.id !== card.id)).deadwood <= 10);
-  el["ok-action"].disabled = !canChooseUpcard;
+  el["ok-action"].disabled = true;
   el["pass-action"].disabled = !canChooseUpcard;
   el["knock-action"].disabled = !canKnock;
   el["knock-action"].classList.toggle("armed", state.knockArmed);
