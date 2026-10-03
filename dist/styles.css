@@ -322,7 +322,7 @@ button.card.selected {
 
 .card-index-suit {
   font-family: Georgia, "Times New Roman", serif;
-  font-size: calc(var(--card-width) * .18);
+  font-size: calc(var(--card-width) * .25);
   line-height: 1;
 }
 
@@ -335,6 +335,7 @@ button.card.selected {
   font-size: calc(var(--card-width) * .60);
   line-height: 1;
   text-shadow: 0 1px 0 rgba(255, 255, 255, .7);
+  transform: translateY(15%);
 }
 
 .card-back {
@@ -1305,7 +1306,7 @@ button.card.selected {
 .player-hand {
   --layout-card-width: clamp(82px, 8.7vw, 112px);
   --layout-card-height: calc(var(--layout-card-width) * 1.18);
-  --layout-row-step: clamp(38px, 4.4vw, 50px);
+  --layout-row-step: clamp(34px, 4vw, 46px);
   position: relative;
   width: 76%;
   height: calc(var(--layout-card-height) + var(--layout-row-step) * 3);
@@ -1364,7 +1365,7 @@ button.card.selected {
 
 .player-hand .card-index-suit,
 .table-center .card-index-suit {
-  font-size: calc(var(--card-width) * .18);
+  font-size: calc(var(--card-width) * .25);
 }
 
 .player-hand .card-pip,
@@ -1605,7 +1606,7 @@ button.card.selected {
 
   .player-hand {
     --layout-card-width: clamp(58px, 18vw, 72px);
-    --layout-row-step: clamp(34px, 9vw, 42px);
+    --layout-row-step: clamp(30px, 8vw, 38px);
     width: 96%;
     overflow: visible;
     padding: 0;
