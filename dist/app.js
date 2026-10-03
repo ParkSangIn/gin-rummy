@@ -75,6 +75,7 @@ function freshState() {
     handNumber: 0,
     dealer: "player",
     upcardPasses: 0,
+    blockedInitialDiscardId: null,
     turn: "player",
     phase: "draw",
     selectedCardId: null,
@@ -433,6 +434,7 @@ function recordDecision({ type, actualKey, actualLabel, options, hand, context }
 function drawPlayer(source) {
   const canDraw = state.phase === "draw" || (state.phase === "upcard" && source === "discard");
   if (state.gameOver || state.turn !== "player" || !canDraw) return;
+  if (source === "discard" && state.discard.at(-1)?.id === state.blockedInitialDiscardId) return;
   if (source === "stock" && state.deck.length <= 2) {
     finishWithoutScore();
     return;
@@ -446,6 +448,7 @@ function drawPlayer(source) {
     state.interest.player.picked.push({ ...drawn });
   } else {
     drawn = state.deck.pop();
+    state.blockedInitialDiscardId = null;
   }
   state.playerHand.push(drawn);
   state.drawnCardId = drawn.id;
@@ -505,8 +508,9 @@ function aiRespondToUpcard() {
 }
 
 function resolveInitialUpcardPasses() {
-  const declined = state.discard.pop();
-  if (declined) addLog(`첫 버림패 ${cardLabel(declined)}는 사용하지 않음`);
+  const declined = state.discard.at(-1);
+  state.blockedInitialDiscardId = declined?.id || null;
+  if (declined) addLog(`첫 버림패 ${cardLabel(declined)}는 이번 첫 드로우에서 제외`);
   state.aiAction = "AI · 첫 업카드 PASS";
   state.phase = "draw";
   state.turn = state.dealer === "player" ? "ai" : "player";
@@ -589,6 +593,7 @@ function aiTakeCard(source) {
     addLog(`AI가 버림패 ${cardLabel(drawn)}를 가져옴`);
   } else {
     drawn = state.deck.pop();
+    state.blockedInitialDiscardId = null;
     state.forbiddenDiscardId = null;
     state.aiAction = "AI · 덱에서 한 장 가져옴";
     addLog("AI가 덱에서 한 장 가져옴");
@@ -607,7 +612,8 @@ function aiDraw() {
   const difficulty = el.difficulty.value;
   const drawOptions = estimateDrawOptions(state.aiHand, "ai", difficulty);
   const choice = chooseByDifficulty(drawOptions, difficulty);
-  aiTakeCard(choice?.key === "discard" && state.discard.length ? "discard" : "stock");
+  const canTakeDiscard = state.discard.length && state.discard.at(-1)?.id !== state.blockedInitialDiscardId;
+  aiTakeCard(choice?.key === "discard" && canTakeDiscard ? "discard" : "stock");
 }
 
 function aiDiscard() {
@@ -824,7 +830,7 @@ function renderSnapshotHand(container, cards) {
 function renderPiles() {
   el["stock-count"].textContent = `덱 ${state.deck.length}장`;
   el["stock-pile"].disabled = state.gameOver || state.turn !== "player" || state.phase !== "draw";
-  el["discard-pile"].disabled = state.gameOver || state.turn !== "player" || !["draw", "upcard"].includes(state.phase) || !state.discard.length;
+  el["discard-pile"].disabled = state.gameOver || state.turn !== "player" || !["draw", "upcard"].includes(state.phase) || !state.discard.length || state.discard.at(-1)?.id === state.blockedInitialDiscardId;
   const top = state.discard.at(-1);
   el["discard-card"].replaceChildren(top ? createCardElement(top) : document.createTextNode("비어 있음"));
 }
