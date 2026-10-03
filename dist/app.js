@@ -24,8 +24,11 @@ const el = Object.fromEntries(
     "player-status-dot",
     "player-deadwood",
     "ai-deadwood",
-    "discard-action",
+    "ai-action-status",
+    "ok-action",
     "knock-action",
+    "pass-action",
+    "ai-delay",
     "difficulty",
     "new-match",
     "brand-button",
@@ -71,7 +74,9 @@ function freshState() {
     turn: "player",
     phase: "draw",
     selectedCardId: null,
+    knockArmed: false,
     forbiddenDiscardId: null,
+    aiAction: "",
     gameOver: false,
     log: [],
     decisions: [],
@@ -376,7 +381,7 @@ function startHand() {
   state.seenCards.add(upcard.id);
   addLog(`핸드 ${state.handNumber} 시작 · 첫 버림패 ${cardLabel(upcard)}`);
   state.turn = "player";
-  state.phase = "draw";
+  state.phase = "upcard";
   persist();
   render();
 }
@@ -415,7 +420,8 @@ function recordDecision({ type, actualKey, actualLabel, options, hand, context }
 }
 
 function drawPlayer(source) {
-  if (state.gameOver || state.turn !== "player" || state.phase !== "draw") return;
+  const canDraw = state.phase === "draw" || (state.phase === "upcard" && source === "discard");
+  if (state.gameOver || state.turn !== "player" || !canDraw) return;
   if (source === "stock" && state.deck.length <= 2) {
     finishWithoutScore();
     return;
@@ -434,6 +440,7 @@ function drawPlayer(source) {
   state.drawnCardId = drawn.id;
   state.forbiddenDiscardId = source === "discard" ? drawn.id : null;
   state.selectedCardId = null;
+  state.knockArmed = false;
   state.phase = "discard";
   recordDecision({
     type: "draw",
@@ -447,14 +454,43 @@ function drawPlayer(source) {
   render();
 }
 
+function aiDelayMs() {
+  return Number.parseInt(el["ai-delay"].value, 10) || 1000;
+}
+
+function playerPassUpcard() {
+  if (state.gameOver || state.turn !== "player" || state.phase !== "upcard") return;
+  state.turn = "ai";
+  state.phase = "thinking";
+  state.aiAction = "AI · 업카드 판단 중";
+  addLog(`첫 버림패 ${cardLabel(state.discard.at(-1))} 패스`, "you");
+  render();
+  window.setTimeout(aiRespondToUpcard, Math.min(600, aiDelayMs()));
+}
+
+function aiRespondToUpcard() {
+  if (state.gameOver || !state.discard.length) return;
+  const options = estimateDrawOptions(state.aiHand, "ai", el.difficulty.value);
+  const choice = chooseByDifficulty(options, el.difficulty.value);
+  if (choice?.key !== "discard") {
+    state.turn = "player";
+    state.phase = "draw";
+    state.aiAction = "AI · 업카드 PASS";
+    addLog("AI가 첫 버림패를 패스함");
+    render();
+    return;
+  }
+  aiTakeCard("discard");
+}
+
 function selectPlayerCard(cardId) {
   if (state.turn !== "player" || state.phase !== "discard" || state.gameOver) return;
   if (cardId === state.forbiddenDiscardId) {
     showToast("방금 가져온 버림패는 같은 턴에 다시 버릴 수 없습니다.");
     return;
   }
-  state.selectedCardId = state.selectedCardId === cardId ? null : cardId;
-  render();
+  state.selectedCardId = cardId;
+  playerDiscard(state.knockArmed);
 }
 
 function playerDiscard(knock) {
@@ -483,6 +519,7 @@ function playerDiscard(knock) {
   state.interest.player.discarded.push({ ...selected });
   addLog(`${cardLabel(selected)} 버림${knock ? " · 노크" : ""}`, "you");
   state.selectedCardId = null;
+  state.knockArmed = false;
   state.forbiddenDiscardId = null;
   if (knock) {
     finishHand("player");
@@ -490,8 +527,39 @@ function playerDiscard(knock) {
   }
   state.turn = "ai";
   state.phase = "thinking";
+  state.aiAction = "AI · 카드 선택 중";
   render();
-  window.setTimeout(aiDraw, 520);
+  window.setTimeout(aiDraw, Math.min(600, aiDelayMs()));
+}
+
+function armKnock() {
+  if (state.turn !== "player" || state.phase !== "discard" || state.gameOver) return;
+  const canKnock = state.playerHand.some((card) => card.id !== state.forbiddenDiscardId && evaluateHand(state.playerHand.filter((item) => item.id !== card.id)).deadwood <= 10);
+  if (!canKnock) {
+    showToast("노크할 수 있는 카드가 없습니다.");
+    return;
+  }
+  state.knockArmed = !state.knockArmed;
+  render();
+}
+
+function aiTakeCard(source) {
+  let drawn;
+  if (source === "discard" && state.discard.length) {
+    drawn = state.discard.pop();
+    state.interest.ai.picked.push({ ...drawn });
+    state.forbiddenDiscardId = drawn.id;
+    state.aiAction = `AI · 버림패 ${cardLabel(drawn)} 가져옴`;
+    addLog(`AI가 버림패 ${cardLabel(drawn)}를 가져옴`);
+  } else {
+    drawn = state.deck.pop();
+    state.forbiddenDiscardId = null;
+    state.aiAction = "AI · 덱에서 한 장 가져옴";
+    addLog("AI가 덱에서 한 장 가져옴");
+  }
+  state.aiHand.push(drawn);
+  render();
+  window.setTimeout(aiDiscard, aiDelayMs());
 }
 
 function aiDraw() {
@@ -503,20 +571,7 @@ function aiDraw() {
   const difficulty = el.difficulty.value;
   const drawOptions = estimateDrawOptions(state.aiHand, "ai", difficulty);
   const choice = chooseByDifficulty(drawOptions, difficulty);
-  let drawn;
-  if (choice?.key === "discard" && state.discard.length) {
-    drawn = state.discard.pop();
-    state.interest.ai.picked.push({ ...drawn });
-    state.forbiddenDiscardId = drawn.id;
-    addLog(`AI가 ${cardLabel(drawn)}를 가져옴`);
-  } else {
-    drawn = state.deck.pop();
-    state.forbiddenDiscardId = null;
-    addLog("AI가 덱에서 한 장 뽑음");
-  }
-  state.aiHand.push(drawn);
-  render();
-  window.setTimeout(aiDiscard, 520);
+  aiTakeCard(choice?.key === "discard" && state.discard.length ? "discard" : "stock");
 }
 
 function aiDiscard() {
@@ -528,6 +583,7 @@ function aiDiscard() {
   state.discard.push(choice.card);
   state.seenCards.add(choice.card.id);
   state.interest.ai.discarded.push({ ...choice.card });
+  state.aiAction = `AI · ${cardLabel(choice.card)} 버림`;
   addLog(`AI가 ${cardLabel(choice.card)}를 버림`);
   state.forbiddenDiscardId = null;
   const deadwood = evaluateHand(state.aiHand).deadwood;
@@ -730,29 +786,31 @@ function renderTurn() {
     el["turn-detail"].textContent = "AI 복기에서 선택이 갈린 장면을 확인하세요.";
   } else if (state.turn === "ai") {
     el["turn-kicker"].textContent = "AI TURN";
-    el["turn-message"].textContent = "AI가 수를 계산하고 있습니다";
-    el["turn-detail"].textContent = "공개된 정보와 패 효율을 함께 평가합니다.";
+    el["turn-message"].textContent = state.aiAction || "AI가 수를 계산하고 있습니다";
+    el["turn-detail"].textContent = "AI 패 수가 11장이 된 뒤 설정한 간격만큼 기다리고 버립니다.";
+  } else if (state.phase === "upcard") {
+    el["turn-kicker"].textContent = "UPCARD";
+    el["turn-message"].textContent = `첫 버림패 ${cardLabel(state.discard.at(-1))}를 가져올까요?`;
+    el["turn-detail"].textContent = "OK는 가져오기, PASS는 AI에게 선택을 넘깁니다.";
   } else if (state.phase === "draw") {
     el["turn-kicker"].textContent = "YOUR TURN";
     el["turn-message"].textContent = "카드를 한 장 가져오세요";
     el["turn-detail"].textContent = "덱 또는 버림패를 선택할 수 있습니다.";
   } else {
     el["turn-kicker"].textContent = "YOUR TURN";
-    el["turn-message"].textContent = "버릴 카드를 선택하세요";
-    el["turn-detail"].textContent = "카드를 누른 뒤 버리기 또는 노크를 선택합니다.";
+    el["turn-message"].textContent = state.knockArmed ? "노크할 카드를 누르세요" : "버릴 카드를 바로 누르세요";
+    el["turn-detail"].textContent = state.knockArmed ? "누른 카드를 버리며 노크합니다." : "KNOCK을 누르면 노크할 카드를 고를 수 있습니다.";
   }
 }
 
 function renderActions() {
-  const selected = state.playerHand.find((card) => card.id === state.selectedCardId);
-  const canDiscard = Boolean(selected) && state.turn === "player" && state.phase === "discard" && !state.gameOver;
-  el["discard-action"].disabled = !canDiscard;
-  let canKnock = false;
-  if (canDiscard) {
-    const remaining = state.playerHand.filter((card) => card.id !== selected.id);
-    canKnock = evaluateHand(remaining).deadwood <= 10;
-  }
+  const canChooseUpcard = state.turn === "player" && state.phase === "upcard" && !state.gameOver;
+  const canKnock = state.turn === "player" && state.phase === "discard" && !state.gameOver
+    && state.playerHand.some((card) => card.id !== state.forbiddenDiscardId && evaluateHand(state.playerHand.filter((item) => item.id !== card.id)).deadwood <= 10);
+  el["ok-action"].disabled = !canChooseUpcard;
+  el["pass-action"].disabled = !canChooseUpcard;
   el["knock-action"].disabled = !canKnock;
+  el["knock-action"].classList.toggle("armed", state.knockArmed);
 }
 
 function renderSidebar() {
@@ -764,6 +822,7 @@ function renderSidebar() {
     : evaluateHand(state.playerHand).deadwood;
   el["player-deadwood"].textContent = `데드우드 ${shownDeadwood ?? 0}`;
   el["ai-deadwood"].textContent = state.gameOver ? `데드우드 ${evaluateHand(state.aiHand).deadwood}` : `${state.aiHand.length}장`;
+  el["ai-action-status"].textContent = state.aiAction;
   el["game-log"].replaceChildren();
   for (const entry of state.log) {
     const item = document.createElement("li");
@@ -1033,8 +1092,9 @@ function registerWebMCP() {
 
 el["stock-pile"].addEventListener("click", () => drawPlayer("stock"));
 el["discard-pile"].addEventListener("click", () => drawPlayer("discard"));
-el["discard-action"].addEventListener("click", () => playerDiscard(false));
-el["knock-action"].addEventListener("click", () => playerDiscard(true));
+el["ok-action"].addEventListener("click", () => drawPlayer("discard"));
+el["pass-action"].addEventListener("click", playerPassUpcard);
+el["knock-action"].addEventListener("click", armKnock);
 el["hint-button"].addEventListener("click", revealHint);
 el["new-match"].addEventListener("click", startMatch);
 el["brand-button"].addEventListener("click", () => showView("game"));

@@ -1347,6 +1347,27 @@ button.card.selected {
   font-size: 12px;
 }
 
+.move-actions .quiet-button {
+  min-height: 34px;
+  color: #17212a;
+  background: #e8edf0;
+}
+
+.move-actions .knock-button.armed {
+  background: #f5df49;
+  box-shadow: 0 0 0 2px rgba(245, 223, 73, 0.45);
+}
+
+.ai-action-status {
+  max-width: 185px;
+  overflow: hidden;
+  color: #f5df49;
+  font-size: 11px;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .side-panel {
   border-left: 1px solid #75b5d3;
   background: #9bd0ea;
@@ -1415,6 +1436,27 @@ button.card.selected {
 
 .side-panel .engine-note strong {
   color: #263846;
+}
+
+.ai-delay-control {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 14px;
+  color: #365363;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.ai-delay-control select {
+  min-height: 30px;
+  padding: 0 7px;
+  border-color: #6ba9c7;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.75);
+  color: #17212a;
+  font-size: 12px;
 }
 
 .side-panel .game-log li {

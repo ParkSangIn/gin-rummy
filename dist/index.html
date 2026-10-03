@@ -46,6 +46,7 @@
                 <span class="status-dot" id="ai-status-dot"></span>
                 <strong>GIN AI</strong>
                 <span id="ai-deadwood" class="muted"></span>
+                <span id="ai-action-status" class="ai-action-status" aria-live="polite"></span>
               </div>
               <div id="ai-hand" class="hand opponent-hand" aria-label="AI 패"></div>
             </div>
@@ -74,8 +75,9 @@
               </div>
               <div id="player-hand" class="hand player-hand" aria-label="내 패, 무늬 4행과 숫자 13열로 자동 정렬됩니다"></div>
               <div class="move-actions">
-                <button id="discard-action" class="primary-button" disabled>선택한 카드 버리기</button>
-                <button id="knock-action" class="knock-button" disabled>버리고 노크</button>
+                <button id="ok-action" class="primary-button" disabled>OK</button>
+                <button id="knock-action" class="knock-button" disabled>KNOCK</button>
+                <button id="pass-action" class="quiet-button" disabled>PASS</button>
               </div>
             </div>
 
@@ -112,6 +114,15 @@
               <div id="live-coach" class="coach-message">
                 내 선택은 숨긴 채 진행됩니다. 원할 때만 물음표를 눌러 추천을 확인하세요.
               </div>
+              <label class="ai-delay-control" for="ai-delay">AI 동작 간격
+                <select id="ai-delay" aria-label="AI가 뽑은 뒤 버릴 때까지의 간격">
+                  <option value="300">0.3초</option>
+                  <option value="600">0.6초</option>
+                  <option value="1000" selected>1.0초</option>
+                  <option value="1500">1.5초</option>
+                  <option value="2000">2.0초</option>
+                </select>
+              </label>
               <p class="engine-note"><strong>현재 AI</strong> 멜드 전수계산 + 미지 카드 확률평가</p>
             </section>
 
