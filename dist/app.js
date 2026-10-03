@@ -750,6 +750,7 @@ function renderHands() {
     const node = createCardElement(card, { button: true, selected: state.selectedCardId === card.id });
     const row = FIXED_SUIT_ROWS[card.suit];
     node.classList.add("layout-card", `suit-row-${row}`);
+    node.classList.toggle("covered-card", state.playerHand.some((other) => other.rank === card.rank && FIXED_SUIT_ROWS[other.suit] > row));
     node.classList.toggle("drawn-card", state.drawnCardId === card.id);
     node.disabled = state.turn !== "player" || state.phase !== "discard" || state.gameOver;
     const rowOffsets = [
@@ -833,6 +834,7 @@ function renderSidebar() {
     item.className = entry.who === "you" ? "you" : "";
     el["game-log"].append(item);
   }
+  el["game-log"].scrollTop = el["game-log"].scrollHeight;
   el["review-count"].textContent = state.decisions.filter((item) => item.different).length;
 }
 
