@@ -1207,6 +1207,15 @@ button.card.selected {
   pointer-events: auto;
 }
 
+.table-center .pile-button:disabled {
+  opacity: 1;
+}
+
+.table-center .pile-button:not(:disabled):hover .card,
+.table-center button.card:hover {
+  translate: 0;
+}
+
 #stock-pile {
   top: 185px;
   left: 22px;
@@ -1272,24 +1281,11 @@ button.card.selected {
   min-height: 0;
   padding: 0;
   overflow: visible;
-  touch-action: none;
-  background: repeating-linear-gradient(
-    to bottom,
-    transparent 0,
-    transparent calc(var(--layout-row-step) - 1px),
-    rgba(255,255,255,.08) var(--layout-row-step),
-    transparent calc(var(--layout-row-step) + 1px)
-  );
+  background: none;
 }
 
 .player-hand::before {
-  position: absolute;
-  right: 4px;
-  bottom: 1px;
-  color: rgba(255, 255, 255, 0.38);
-  content: "카드를 끌어서 4행에 정리";
-  font-size: 10px;
-  pointer-events: none;
+  content: none;
 }
 
 .player-hand .layout-card {
@@ -1301,29 +1297,28 @@ button.card.selected {
   margin: 0;
   border-radius: 4px;
   box-shadow: 0 2px 3px rgba(0, 0, 0, 0.25);
-  transition: left 120ms ease, top 120ms ease, translate 120ms ease, box-shadow 120ms ease;
-  touch-action: none;
+  transition: none;
 }
 
 .player-hand .layout-card + .layout-card {
   margin-left: 0;
 }
 
-.player-hand .layout-card:hover {
-  translate: 0 -3px;
-}
-
-.player-hand .layout-card.dragging {
-  z-index: 999 !important;
-  opacity: 0.92;
-  transition: none;
-  cursor: grabbing;
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.38);
+.player-hand .layout-card:hover,
+.player-hand .layout-card:disabled {
+  translate: 0;
+  opacity: 1;
+  cursor: default;
 }
 
 .player-hand .layout-card.selected {
-  translate: 0 -8px;
+  translate: 0;
   box-shadow: 0 0 0 3px #f5df49, 0 8px 16px rgba(0, 0, 0, 0.28);
+}
+
+.player-hand .layout-card.drawn-card {
+  background: #c9cccb;
+  box-shadow: inset 0 0 0 2px #8c9290, 0 2px 3px rgba(0, 0, 0, 0.25);
 }
 
 .player-hand .card-rank,

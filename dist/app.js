@@ -7,8 +7,7 @@ const SUITS = [
 const RANKS = ["", "A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
 const TARGET_SCORE = 100;
 const STORAGE_KEY = "gin-lab-ai-session-v1";
-const HAND_ROWS = 4;
-const HAND_SLOTS = 15;
+const FIXED_SUIT_ROWS = { H: 0, C: 1, D: 2, S: 3 };
 
 const el = Object.fromEntries(
   [
@@ -77,7 +76,7 @@ function freshState() {
     log: [],
     decisions: [],
     decisionCounter: 0,
-    cardLayout: {},
+    drawnCardId: null,
     interest: {
       player: { picked: [], discarded: [] },
       ai: { picked: [], discarded: [] },
@@ -372,9 +371,6 @@ function startHand() {
     state.playerHand.push(state.deck.pop());
     state.aiHand.push(state.deck.pop());
   }
-  sortCards(state.playerHand).forEach((card, index) => {
-    state.cardLayout[card.id] = { row: 3, slot: index + 1 };
-  });
   const upcard = state.deck.pop();
   state.discard.push(upcard);
   state.seenCards.add(upcard.id);
@@ -435,7 +431,7 @@ function drawPlayer(source) {
     drawn = state.deck.pop();
   }
   state.playerHand.push(drawn);
-  state.cardLayout[drawn.id] = nextFreeLayoutPosition();
+  state.drawnCardId = drawn.id;
   state.forbiddenDiscardId = source === "discard" ? drawn.id : null;
   state.selectedCardId = null;
   state.phase = "discard";
@@ -481,7 +477,7 @@ function playerDiscard(knock) {
     context: { drawnFrom: state.forbiddenDiscardId ? "discard" : "stock" },
   });
   state.playerHand = remaining;
-  delete state.cardLayout[selected.id];
+  state.drawnCardId = null;
   state.discard.push(selected);
   state.seenCards.add(selected.id);
   state.interest.player.discarded.push({ ...selected });
@@ -688,114 +684,25 @@ function createCardElement(card, { hidden = false, button = false, selected = fa
   return node;
 }
 
-function nextFreeLayoutPosition(preferredRow = 3, preferredSlot = null) {
-  const occupied = new Set(Object.values(state.cardLayout || {}).map((position) => `${position.row}:${position.slot}`));
-  const wanted = preferredSlot == null ? state.playerHand.length : preferredSlot;
-  for (let distance = 0; distance <= HAND_SLOTS; distance += 1) {
-    for (const slot of [wanted + distance, wanted - distance]) {
-      const safeSlot = Math.max(0, Math.min(HAND_SLOTS - 1, slot));
-      if (!occupied.has(`${preferredRow}:${safeSlot}`)) return { row: preferredRow, slot: safeSlot };
-    }
-  }
-  for (let row = 0; row < HAND_ROWS; row += 1) {
-    for (let slot = 0; slot < HAND_SLOTS; slot += 1) {
-      if (!occupied.has(`${row}:${slot}`)) return { row, slot };
-    }
-  }
-  return { row: preferredRow, slot: 0 };
-}
-
-function ensureCardLayout() {
-  if (!state.cardLayout) state.cardLayout = {};
-  const liveIds = new Set(state.playerHand.map((card) => card.id));
-  for (const cardId of Object.keys(state.cardLayout)) {
-    if (!liveIds.has(cardId)) delete state.cardLayout[cardId];
-  }
-  for (const card of sortCards(state.playerHand)) {
-    if (!state.cardLayout[card.id]) state.cardLayout[card.id] = nextFreeLayoutPosition();
-  }
-}
-
-function moveCardInLayout(cardId, row, slot) {
-  const current = state.cardLayout[cardId];
-  delete state.cardLayout[cardId];
-  state.cardLayout[cardId] = nextFreeLayoutPosition(row, slot);
-  if (!state.cardLayout[cardId]) state.cardLayout[cardId] = current;
-}
-
-function attachCardDrag(node, cardId) {
-  let startX = 0;
-  let startY = 0;
-  let dragged = false;
-  node.addEventListener("pointerdown", (event) => {
-    if (event.button !== 0) return;
-    startX = event.clientX;
-    startY = event.clientY;
-    dragged = false;
-    node.setPointerCapture(event.pointerId);
-  });
-  node.addEventListener("pointermove", (event) => {
-    if (!node.hasPointerCapture(event.pointerId)) return;
-    const dx = event.clientX - startX;
-    const dy = event.clientY - startY;
-    if (Math.hypot(dx, dy) > 5) dragged = true;
-    if (!dragged) return;
-    event.preventDefault();
-    node.classList.add("dragging");
-    node.style.transform = `translate(${dx}px, ${dy}px)`;
-  });
-  node.addEventListener("pointerup", (event) => {
-    if (!node.hasPointerCapture(event.pointerId)) return;
-    node.releasePointerCapture(event.pointerId);
-    node.classList.remove("dragging");
-    node.style.transform = "";
-    if (!dragged) return;
-    const rect = el["player-hand"].getBoundingClientRect();
-    const centerX = Math.max(rect.left, Math.min(rect.right, event.clientX));
-    const centerY = Math.max(rect.top, Math.min(rect.bottom, event.clientY));
-    const row = Math.max(0, Math.min(HAND_ROWS - 1, Math.round(((centerY - rect.top) / rect.height) * (HAND_ROWS - 1))));
-    const slot = Math.max(0, Math.min(HAND_SLOTS - 1, Math.round(((centerX - rect.left) / rect.width) * (HAND_SLOTS - 1))));
-    moveCardInLayout(cardId, row, slot);
-    renderHands();
-  });
-  node.addEventListener("pointercancel", () => {
-    node.classList.remove("dragging");
-    node.style.transform = "";
-  });
-  node.addEventListener("click", (event) => {
-    if (dragged) {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      dragged = false;
-    }
-  }, true);
-}
-
 function renderHands() {
-  ensureCardLayout();
   el["player-hand"].replaceChildren();
-  const orderedPlayerCards = state.playerHand.slice().sort((a, b) => {
-    const left = state.cardLayout[a.id];
-    const right = state.cardLayout[b.id];
-    return left.row - right.row || left.slot - right.slot;
-  });
+  const orderedPlayerCards = state.playerHand.slice().sort((a, b) => FIXED_SUIT_ROWS[a.suit] - FIXED_SUIT_ROWS[b.suit] || a.rank - b.rank);
   for (const card of orderedPlayerCards) {
     const node = createCardElement(card, { button: true, selected: state.selectedCardId === card.id });
-    const position = state.cardLayout[card.id];
-    node.classList.add("layout-card");
-    node.style.setProperty("--layout-row", position.row);
-    node.style.setProperty("--layout-slot", position.slot);
+    const row = FIXED_SUIT_ROWS[card.suit];
+    node.classList.add("layout-card", `suit-row-${row}`);
+    node.classList.toggle("drawn-card", state.drawnCardId === card.id);
+    node.disabled = state.turn !== "player" || state.phase !== "discard" || state.gameOver;
     const rowOffsets = [
       "0px",
       "var(--layout-row-step)",
       "calc(var(--layout-row-step) + var(--layout-row-step))",
       "calc(var(--layout-row-step) + var(--layout-row-step) + var(--layout-row-step))",
     ];
-    node.style.top = rowOffsets[position.row];
-    node.style.left = `${position.slot * 5.7}%`;
-    node.style.zIndex = String(10 + position.row * HAND_SLOTS + position.slot);
+    node.style.top = rowOffsets[row];
+    node.style.left = `${(card.rank - 1) * 6.5}%`;
+    node.style.zIndex = String(10 + row * 13 + card.rank);
     node.addEventListener("click", () => selectPlayerCard(card.id));
-    attachCardDrag(node, card.id);
     el["player-hand"].append(node);
   }
 
