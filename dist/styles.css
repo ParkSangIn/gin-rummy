@@ -511,6 +511,20 @@ button.card.selected {
   line-height: 1.6;
 }
 
+.engine-note {
+  margin: 14px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  color: #8fa29a;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.engine-note strong {
+  color: #c6d3cd;
+  margin-right: 5px;
+}
+
 .history-panel {
   min-height: 0;
   flex: 1;
