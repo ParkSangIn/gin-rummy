@@ -72,7 +72,9 @@
                 <strong>YOU</strong>
                 <span id="player-deadwood" class="deadwood-pill">데드우드 0</span>
               </div>
-              <div id="player-hand" class="hand player-hand" aria-label="내 패"></div>
+              <div id="player-hand" class="hand player-hand" aria-label="내 패, 카드를 끌어서 네 줄에 정리할 수 있습니다">
+                <span class="arrangement-help">카드를 끌어서 4행에 정리</span>
+              </div>
               <div class="move-actions">
                 <button id="discard-action" class="primary-button" disabled>선택한 카드 버리기</button>
                 <button id="knock-action" class="knock-button" disabled>버리고 노크</button>
@@ -94,13 +96,10 @@
 
           <aside class="side-panel">
             <section class="score-panel">
-              <div>
-                <span class="eyebrow">MATCH TO 100</span>
-                <strong>점수</strong>
-              </div>
+              <div class="table-title"><strong>table #AI</strong><span>10m</span></div>
               <div class="score-grid">
-                <div><span>YOU</span><strong id="player-score">0</strong></div>
-                <div><span>AI</span><strong id="ai-score">0</strong></div>
+                <div><span>#1 · YOU</span><strong id="player-score">0</strong></div>
+                <div><span>#2 · GIN AI</span><strong id="ai-score">0</strong></div>
               </div>
             </section>
 

@@ -1138,6 +1138,425 @@ button.card.selected {
   }
 }
 
+/* PlayOK-style fixed table and four-row hand rack */
+.game-layout {
+  grid-template-columns: minmax(0, 955px) 310px;
+  width: min(1265px, 100%);
+  min-height: 0;
+  height: min(714px, calc(100dvh - 64px));
+  margin-top: clamp(0px, 2vh, 20px);
+  border: 1px solid #8ebbd0;
+  box-shadow: 0 20px 55px rgba(0, 0, 0, 0.3);
+}
+
+.game-board {
+  display: block;
+  min-height: 0;
+  height: 100%;
+  background: #278046;
+}
+
+.game-board::before {
+  display: none;
+}
+
+.opponent-zone {
+  position: absolute;
+  top: 22px;
+  right: 0;
+  left: 0;
+  height: 150px;
+  padding: 0;
+}
+
+.opponent-zone .seat-label {
+  order: 2;
+  margin-top: 6px;
+}
+
+.opponent-hand {
+  width: 290px;
+  padding: 0;
+  overflow: visible;
+  justify-content: center;
+}
+
+.opponent-hand .card {
+  --card-width: 94px;
+  height: 112px;
+  border: 5px solid #f7f7f2;
+  border-radius: 4px;
+  box-shadow: none;
+}
+
+.opponent-hand .card + .card {
+  margin-left: -72px;
+}
+
+.table-center {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  display: block;
+  padding: 0;
+  pointer-events: none;
+}
+
+.table-center .pile-button {
+  position: absolute;
+  pointer-events: auto;
+}
+
+#stock-pile {
+  top: 185px;
+  left: 22px;
+}
+
+#discard-pile {
+  top: 205px;
+  right: 38px;
+}
+
+.table-center .card {
+  --card-width: clamp(78px, 7.5vw, 102px);
+  height: calc(var(--card-width) * 1.18);
+  border-radius: 4px;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2);
+}
+
+#stock-pile > .card {
+  border: 5px solid #f7f7f2;
+  box-shadow: -5px 5px 0 #4d8fc5, -8px 8px 0 #f7f7f2, -11px 11px 0 #4d8fc5, -14px 14px 0 #f7f7f2;
+}
+
+.turn-panel {
+  position: absolute;
+  top: 190px;
+  left: 50%;
+  width: min(360px, 48%);
+  translate: -50% 0;
+}
+
+.turn-panel strong {
+  font-size: 16px;
+}
+
+.turn-panel > span:last-child {
+  font-size: 11px;
+}
+
+.human-zone {
+  position: absolute;
+  z-index: 3;
+  right: 0;
+  bottom: 8px;
+  left: 0;
+  height: 370px;
+  padding: 0 16px;
+  justify-content: flex-start;
+  overflow: visible;
+}
+
+.human-zone > .seat-label {
+  height: 28px;
+  flex: 0 0 28px;
+}
+
+.player-hand {
+  --layout-card-width: clamp(82px, 8.7vw, 112px);
+  --layout-card-height: calc(var(--layout-card-width) * 1.18);
+  --layout-row-step: clamp(38px, 4.4vw, 50px);
+  position: relative;
+  width: 76%;
+  height: calc(var(--layout-card-height) + var(--layout-row-step) * 3);
+  min-height: 0;
+  padding: 0;
+  overflow: visible;
+  touch-action: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent calc(var(--layout-row-step) - 1px),
+    rgba(255,255,255,.08) var(--layout-row-step),
+    transparent calc(var(--layout-row-step) + 1px)
+  );
+}
+
+.player-hand::before {
+  position: absolute;
+  right: 4px;
+  bottom: 1px;
+  color: rgba(255, 255, 255, 0.38);
+  content: "카드를 끌어서 4행에 정리";
+  font-size: 10px;
+  pointer-events: none;
+}
+
+.player-hand .layout-card {
+  --card-width: var(--layout-card-width);
+  position: absolute;
+  top: calc(var(--layout-row) * var(--layout-row-step));
+  left: calc(var(--layout-slot) * (100% - var(--layout-card-width)) / 14);
+  height: var(--layout-card-height);
+  margin: 0;
+  border-radius: 4px;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.25);
+  transition: left 120ms ease, top 120ms ease, translate 120ms ease, box-shadow 120ms ease;
+  touch-action: none;
+}
+
+.player-hand .layout-card + .layout-card {
+  margin-left: 0;
+}
+
+.player-hand .layout-card:hover {
+  translate: 0 -3px;
+}
+
+.player-hand .layout-card.dragging {
+  z-index: 999 !important;
+  opacity: 0.92;
+  transition: none;
+  cursor: grabbing;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.38);
+}
+
+.player-hand .layout-card.selected {
+  translate: 0 -8px;
+  box-shadow: 0 0 0 3px #f5df49, 0 8px 16px rgba(0, 0, 0, 0.28);
+}
+
+.player-hand .card-rank,
+.table-center .card-rank {
+  align-items: flex-start;
+  font-size: calc(var(--card-width) * 0.3);
+  line-height: .88;
+}
+
+.player-hand .card-suit,
+.table-center .card-suit {
+  font-size: calc(var(--card-width) * 0.55);
+}
+
+.move-actions {
+  position: absolute;
+  right: 14px;
+  bottom: 4px;
+  gap: 5px;
+}
+
+.move-actions button {
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 3px;
+  font-size: 12px;
+}
+
+.side-panel {
+  border-left: 1px solid #75b5d3;
+  background: #9bd0ea;
+  color: #17212a;
+}
+
+.side-panel section {
+  padding: 14px 10px;
+  border-bottom: 1px solid #76b6d5;
+}
+
+.score-panel {
+  display: block;
+}
+
+.table-title {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 2px 10px;
+  font-family: Georgia, serif;
+  font-size: 14px;
+}
+
+.score-grid {
+  gap: 2px;
+}
+
+.score-grid div {
+  min-width: 0;
+  padding: 7px;
+  border-radius: 0;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.score-grid span,
+.side-panel .muted,
+.side-panel .privacy-note,
+.side-panel .engine-note,
+.side-panel .hand-number {
+  color: #506676;
+}
+
+.score-grid strong {
+  color: #17212a;
+  font-size: 20px;
+}
+
+.side-panel .eyebrow {
+  color: #287197;
+}
+
+.side-panel .coach-message,
+.side-panel .game-log li,
+.side-panel .panel-heading strong {
+  color: #263846;
+}
+
+.side-panel .icon-button {
+  border-color: #5f9fbe;
+  color: #174e6d;
+}
+
+.side-panel .engine-note {
+  border-top-color: rgba(23, 78, 109, 0.18);
+}
+
+.side-panel .engine-note strong {
+  color: #263846;
+}
+
+.side-panel .game-log li {
+  border-left-color: #6ca9c7;
+}
+
+.side-panel .game-log li.you {
+  border-left-color: #217642;
+}
+
+.side-panel .privacy-note {
+  margin: auto 12px 12px;
+}
+
+.snapshot-hand .card {
+  --card-width: 62px;
+}
+
+@media (max-width: 980px) {
+  .game-layout {
+    grid-template-columns: 1fr;
+    width: 100%;
+    height: auto;
+    margin-top: 0;
+    border-right: 0;
+    border-left: 0;
+  }
+
+  .game-board {
+    height: min(720px, calc(100dvh - 58px));
+    min-height: 610px;
+  }
+
+  .side-panel {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border-top: 1px solid #75b5d3;
+    border-left: 0;
+  }
+
+  .history-panel,
+  .privacy-note {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 700px) {
+  .game-board {
+    min-height: 590px;
+    height: calc(100dvh - 58px);
+  }
+
+  .opponent-zone {
+    top: 12px;
+    height: 112px;
+    overflow: visible;
+  }
+
+  .opponent-hand {
+    width: 210px;
+    overflow: visible;
+    padding: 0;
+  }
+
+  .opponent-hand .card {
+    --card-width: 68px;
+    height: 82px;
+  }
+
+  .opponent-hand .card + .card {
+    margin-left: -52px;
+  }
+
+  #stock-pile {
+    top: 145px;
+    left: 12px;
+  }
+
+  #discard-pile {
+    top: 155px;
+    right: 14px;
+  }
+
+  .table-center .card {
+    --card-width: 64px;
+  }
+
+  .turn-panel {
+    top: 150px;
+    width: 52%;
+  }
+
+  .turn-panel strong {
+    font-size: 13px;
+  }
+
+  .turn-panel > span:last-child {
+    display: none;
+  }
+
+  .human-zone {
+    bottom: 4px;
+    height: 316px;
+    padding: 0 6px;
+    overflow: visible;
+  }
+
+  .player-hand {
+    --layout-card-width: clamp(58px, 18vw, 72px);
+    --layout-row-step: clamp(34px, 9vw, 42px);
+    width: 96%;
+    overflow: visible;
+    padding: 0;
+  }
+
+  .player-hand .layout-card {
+    flex-basis: var(--layout-card-width);
+  }
+
+  .move-actions {
+    right: 6px;
+    bottom: 0;
+    left: 6px;
+    width: auto;
+    padding: 0;
+  }
+
+  .side-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .history-panel,
+  .privacy-note {
+    grid-column: auto;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
