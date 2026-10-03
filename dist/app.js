@@ -74,6 +74,7 @@ function freshState() {
     aiScore: 0,
     handNumber: 0,
     dealer: "player",
+    upcardPasses: 0,
     turn: "player",
     phase: "draw",
     selectedCardId: null,
@@ -366,13 +367,13 @@ function startMatch() {
 }
 
 function startHand() {
-  const scores = state ? { player: state.playerScore, ai: state.aiScore, hand: state.handNumber } : { player: 0, ai: 0, hand: 0 };
+  const scores = state ? { player: state.playerScore, ai: state.aiScore, hand: state.handNumber, dealer: state.dealer } : { player: 0, ai: 0, hand: 0, dealer: null };
   const previousDecisions = state?.decisions || [];
   state = freshState();
   state.playerScore = scores.player;
   state.aiScore = scores.ai;
   state.handNumber = scores.hand + 1;
-  state.dealer = state.handNumber % 2 ? "player" : "ai";
+  state.dealer = scores.hand ? scores.dealer : (Math.random() < 0.5 ? "player" : "ai");
   state.decisions = previousDecisions;
   state.decisionCounter = previousDecisions.length;
   state.deck = shuffled(makeDeck());
@@ -384,10 +385,16 @@ function startHand() {
   state.discard.push(upcard);
   state.seenCards.add(upcard.id);
   addLog(`핸드 ${state.handNumber} 시작 · 첫 버림패 ${cardLabel(upcard)}`);
-  state.turn = "player";
+  state.turn = state.dealer === "player" ? "ai" : "player";
   state.phase = "upcard";
   persist();
   render();
+  if (state.turn === "ai") {
+    state.phase = "thinking";
+    state.aiAction = "AI · 첫 업카드 판단 중";
+    render();
+    window.setTimeout(aiRespondToUpcard, Math.min(600, aiDelayMs()));
+  }
 }
 
 function recordDecision({ type, actualKey, actualLabel, options, hand, context }) {
@@ -464,10 +471,15 @@ function aiDelayMs() {
 
 function playerPassUpcard() {
   if (state.gameOver || state.turn !== "player" || state.phase !== "upcard") return;
+  state.upcardPasses += 1;
+  addLog(`첫 버림패 ${cardLabel(state.discard.at(-1))} 패스`, "you");
+  if (state.upcardPasses >= 2) {
+    resolveInitialUpcardPasses();
+    return;
+  }
   state.turn = "ai";
   state.phase = "thinking";
   state.aiAction = "AI · 업카드 판단 중";
-  addLog(`첫 버림패 ${cardLabel(state.discard.at(-1))} 패스`, "you");
   render();
   window.setTimeout(aiRespondToUpcard, Math.min(600, aiDelayMs()));
 }
@@ -477,14 +489,34 @@ function aiRespondToUpcard() {
   const options = estimateDrawOptions(state.aiHand, "ai", el.difficulty.value);
   const choice = chooseByDifficulty(options, el.difficulty.value);
   if (choice?.key !== "discard") {
-    state.turn = "player";
-    state.phase = "draw";
+    state.upcardPasses += 1;
     state.aiAction = "AI · 업카드 PASS";
     addLog("AI가 첫 버림패를 패스함");
+    if (state.upcardPasses >= 2) {
+      resolveInitialUpcardPasses();
+      return;
+    }
+    state.turn = "player";
+    state.phase = "upcard";
     render();
     return;
   }
   aiTakeCard("discard");
+}
+
+function resolveInitialUpcardPasses() {
+  const declined = state.discard.pop();
+  if (declined) addLog(`첫 버림패 ${cardLabel(declined)}는 사용하지 않음`);
+  state.aiAction = "AI · 첫 업카드 PASS";
+  state.phase = "draw";
+  state.turn = state.dealer === "player" ? "ai" : "player";
+  render();
+  if (state.turn === "ai") {
+    state.phase = "thinking";
+    state.aiAction = "AI · 덱에서 카드 선택 중";
+    render();
+    window.setTimeout(aiDraw, Math.min(600, aiDelayMs()));
+  }
 }
 
 function selectPlayerCard(cardId) {
@@ -703,6 +735,7 @@ function finishHand(knocker) {
   }
   if (winner === "player") state.playerScore += points;
   else state.aiScore += points;
+  state.dealer = winner;
   const matchOver = state.playerScore >= TARGET_SCORE || state.aiScore >= TARGET_SCORE;
   state.lastResult = { winner, points, reason, gin, matchOver };
   addLog(`${winner === "player" ? "YOU" : "AI"} +${points}점 · ${reason}`, winner === "player" ? "you" : "system");
