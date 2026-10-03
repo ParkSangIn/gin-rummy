@@ -1176,7 +1176,7 @@ button.card.selected {
   width: min(1265px, 100%);
   min-height: 0;
   height: min(714px, calc(100dvh - 64px));
-  margin-top: clamp(0px, 2vh, 20px);
+  margin: 0 auto;
   border: 1px solid #8ebbd0;
   box-shadow: 0 20px 55px rgba(0, 0, 0, 0.3);
 }
