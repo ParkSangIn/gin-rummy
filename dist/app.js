@@ -807,8 +807,20 @@ function renderHands() {
   }
 
   el["ai-hand"].replaceChildren();
-  for (const card of sortCards(state.aiHand)) {
-    el["ai-hand"].append(createCardElement(card, { hidden: !state.gameOver }));
+  el["ai-hand"].classList.toggle("final-hand", state.gameOver);
+  el["ai-hand"].closest(".opponent-zone").classList.toggle("show-final-hand", state.gameOver);
+  const orderedAiCards = sortCards(state.aiHand);
+  for (const card of orderedAiCards) {
+    const node = createCardElement(card, { hidden: !state.gameOver });
+    if (state.gameOver) {
+      const row = FIXED_SUIT_ROWS[card.suit];
+      node.classList.add("final-ai-card");
+      node.classList.toggle("covered-card", state.aiHand.some((other) => other.rank === card.rank && FIXED_SUIT_ROWS[other.suit] > row));
+      node.style.top = `${row * 40}px`;
+      node.style.left = `${(card.rank - 1) * 6.5}%`;
+      node.style.zIndex = String(10 + row * 13 + card.rank);
+    }
+    el["ai-hand"].append(node);
   }
 }
 
