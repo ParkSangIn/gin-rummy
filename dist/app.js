@@ -3,6 +3,9 @@ let engineLoading = false;
 let engineStartGame;
 let engineSubmitAction;
 
+function usingEngine() { return el.difficulty.value === "engine"; }
+function heuristicLevel() { return el.difficulty.value.replace("heuristic-", ""); }
+
 function engineCard(code) {
   const suit = code.at(-1);
   const value = code.slice(0, -1);
@@ -43,13 +46,15 @@ function startEngineHand() {
   state.decisionCounter = previousDecisions.length;
   try {
     applyEngineState(JSON.parse(engineStartGame()));
+    render();
   } catch (error) {
     engineReady = false;
-    showToast("엔진 시작에 실패해 기존 AI로 전환했습니다.");
-    startHand();
-    return;
+    state.turn = "ai";
+    state.phase = "thinking";
+    state.aiAction = "Engine start failed. Choose New Game to retry.";
+    render();
+    showToast("Engine start failed. Heuristic AI was not enabled.");
   }
-  render();
 }
 
 async function loadEngine() {
@@ -61,10 +66,16 @@ async function loadEngine() {
     engineStartGame = module.start_game;
     engineSubmitAction = module.submit_action;
     engineReady = true;
-    startEngineHand();
+    if (usingEngine()) startEngineHand();
   } catch (error) {
     engineLoading = false;
-    showToast("엔진을 불러오지 못해 기존 AI를 사용합니다.");
+    if (usingEngine()) {
+      state.turn = "ai";
+      state.phase = "thinking";
+      state.aiAction = "Engine load failed. Refresh to retry.";
+      render();
+    }
+    showToast("Engine load failed. Heuristic AI was not enabled.");
   }
 }
 const SUITS = [
@@ -433,12 +444,16 @@ function addLog(text, who = "system") {
 
 function startMatch() {
   state = freshState();
-  if (engineReady) { startEngineHand(); return; }
+  if (usingEngine()) {
+    if (engineReady) startEngineHand();
+    else showToast("Engine is loading. Please wait.");
+    return;
+  }
   startHand();
 }
 
 function startHand() {
-  if (engineReady) { startEngineHand(); return; }
+  if (usingEngine()) { if (engineReady) startEngineHand(); else showToast("엔진을 불러오는 중입니다."); return; }
   const scores = state ? { player: state.playerScore, ai: state.aiScore, hand: state.handNumber, dealer: state.dealer } : { player: 0, ai: 0, hand: 0, dealer: null };
   const previousDecisions = state?.decisions || [];
   state = freshState();
@@ -503,7 +518,8 @@ function recordDecision({ type, actualKey, actualLabel, options, hand, context }
 }
 
 function drawPlayer(source) {
-  if (engineReady) {
+  if (usingEngine()) {
+    if (!engineReady) { showToast("엔진을 불러오는 중입니다."); return; }
     if (state.phase === "upcard" && source === "discard") engineAction({ type: "draw_discard" });
     else if (state.phase === "draw") engineAction({ type: source === "discard" ? "draw_discard" : "draw_stock" });
     return;
@@ -549,7 +565,7 @@ function aiDelayMs() {
 }
 
 function playerPassUpcard() {
-  if (engineReady) { engineAction({ type: "pass_upcard" }); return; }
+  if (usingEngine()) { if (engineReady) engineAction({ type: "pass_upcard" }); else showToast("엔진을 불러오는 중입니다."); return; }
   if (state.gameOver || state.turn !== "player" || state.phase !== "upcard") return;
   state.upcardPasses += 1;
   addLog(`첫 업카드 ${cardLabel(state.discard.at(-1))} 패스`, "you");
@@ -566,8 +582,8 @@ function playerPassUpcard() {
 
 function aiRespondToUpcard() {
   if (state.gameOver || !state.discard.length) return;
-  const options = estimateDrawOptions(state.aiHand, "ai", el.difficulty.value);
-  const choice = chooseByDifficulty(options, el.difficulty.value);
+  const options = estimateDrawOptions(state.aiHand, "ai", heuristicLevel());
+  const choice = chooseByDifficulty(options, heuristicLevel());
   if (choice?.key !== "discard") {
     state.upcardPasses += 1;
     state.aiAction = "AI · 업카드 PASS";
@@ -611,7 +627,8 @@ function selectPlayerCard(cardId) {
 }
 
 function playerDiscard(knock) {
-  if (engineReady) {
+  if (usingEngine()) {
+    if (!engineReady) { showToast("엔진을 불러오는 중입니다."); return; }
     const selected = state.playerHand.find((card) => card.id === state.selectedCardId);
     if (selected) engineAction({ type: knock ? "knock" : "discard", card: `${RANKS[selected.rank] === "10" ? "T" : RANKS[selected.rank]}${selected.suit}` });
     return;
@@ -691,7 +708,7 @@ function aiDraw() {
     finishWithoutScore();
     return;
   }
-  const difficulty = el.difficulty.value;
+  const difficulty = heuristicLevel();
   const drawOptions = estimateDrawOptions(state.aiHand, "ai", difficulty);
   const choice = chooseByDifficulty(drawOptions, difficulty);
   const canTakeDiscard = state.discard.length && state.discard.at(-1)?.id !== state.blockedInitialDiscardId;
@@ -700,7 +717,7 @@ function aiDraw() {
 
 function aiDiscard() {
   if (state.gameOver) return;
-  const difficulty = el.difficulty.value;
+  const difficulty = heuristicLevel();
   const options = bestDiscardOptions(state.aiHand, "ai", state.forbiddenDiscardId);
   const choice = chooseByDifficulty(options, difficulty) || options[0];
   state.aiHand = state.aiHand.filter((card) => card.id !== choice.card.id);
@@ -1266,6 +1283,14 @@ const restored = restoreDecisions();
 state = freshState();
 state.decisions = restored;
 state.decisionCounter = restored.reduce((max, decision) => Math.max(max, decision.id || 0), 0);
-startHand();
+if (usingEngine()) {
+  state.turn = "ai";
+  state.phase = "thinking";
+  state.aiAction = "Engine loading";
+  render();
+} else {
+  startHand();
+}
 registerWebMCP();
 loadEngine();
+el.difficulty.addEventListener("change", startMatch);

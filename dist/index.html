@@ -28,10 +28,11 @@
       </nav>
       <div class="top-actions">
         <label class="difficulty-label" for="difficulty">AI</label>
-        <select id="difficulty" aria-label="AI 난이도">
-          <option value="easy">입문</option>
-          <option value="medium">중급</option>
-          <option value="strong" selected>강한 AI</option>
+        <select id="difficulty" aria-label="AI mode">
+          <option value="engine" selected>Engine AI · Monte Carlo</option>
+          <option value="heuristic-easy">Heuristic · easy</option>
+          <option value="heuristic-medium">Heuristic · medium</option>
+          <option value="heuristic-strong">Heuristic · strong</option>
         </select>
         <button id="new-match" class="quiet-button">새 대국</button>
       </div>
