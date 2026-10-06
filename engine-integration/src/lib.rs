@@ -37,15 +37,22 @@ struct GameView {
     phase: String,
     player_hand: Vec<String>,
     opponent_hand_len: usize,
+    opponent_hand: Option<Vec<String>>,
     discard_pile: Vec<String>,
     stock_len: usize,
     can_take_discard: bool,
     taken_discard: Option<String>,
     deadwood: u8,
-    result: Option<String>,
+    result: Option<RoundOutcome>,
     events: Vec<GameEvent>,
 }
 
+#[derive(Debug, Serialize)]
+struct RoundOutcome {
+    kind: &'static str,
+    winner: Option<&'static str>,
+    points: u16,
+}
 #[derive(Debug, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 enum PlayerRequest {
@@ -130,22 +137,33 @@ fn log(session: &mut GameSession, actor: &'static str, action: impl Into<String>
 
 fn view(session: &GameSession) -> GameView {
     let view = session.table.view(Player::One);
+    let result = session.table.round().result();
+    let outcome = result.map(|result| RoundOutcome {
+        kind: match result {
+            gin_rummy::RoundResult::Dead => "dead",
+            gin_rummy::RoundResult::Knock { .. } => "knock",
+            gin_rummy::RoundResult::Undercut { .. } => "undercut",
+            gin_rummy::RoundResult::Gin { .. } => "gin",
+            gin_rummy::RoundResult::BigGin { .. } => "big_gin",
+            _ => "finished",
+        },
+        winner: result.winner().map(player_name),
+        points: result.points(view.rules()),
+    });
     GameView {
         dealer: player_name(view.dealer()),
         turn: session.table.turn().map(player_name),
         phase: view.phase().to_string(),
         player_hand: cards(view.hand()),
         opponent_hand_len: view.opponent_hand_len(),
+        opponent_hand: result.map(|_| cards(session.table.round().hand(Player::Two))),
         discard_pile: cards(view.discard_pile().iter().copied()),
         stock_len: view.stock_len(),
         can_take_discard: view.can_take_discard(),
         taken_discard: view.taken_discard().map(card_code),
         deadwood: view.deadwood(),
-        result: session
-            .table
-            .round()
-            .result()
-            .map(|result| format!("{result:?}")),
+        result: outcome,
+
         events: session.events.clone(),
     }
 }
@@ -154,14 +172,24 @@ fn apply_ai(session: &mut GameSession) -> Result<(), String> {
     while session.table.turn() == Some(Player::Two) {
         let phase = session.table.round().phase();
         let before_top = session.table.round().discard_pile().last().copied();
+        let before_stock_len = session.table.round().stock().len();
+        let before_opponent_hand_len = session.table.round().hand(Player::Two).len();
         let mut bot = MonteCarloBot::new(rng());
         session
             .table
             .step(&mut bot)
             .map_err(|error| error.to_string())?;
         let action = match phase {
-            Phase::Upcard => "AI responded to the first upcard".to_string(),
-            Phase::Draw => "AI drew a card".to_string(),
+            Phase::Upcard
+                if session.table.round().hand(Player::Two).len() > before_opponent_hand_len =>
+            {
+                "AI took the first upcard".to_string()
+            }
+            Phase::Upcard => "AI passed the first upcard".to_string(),
+            Phase::Draw if session.table.round().stock().len() < before_stock_len => {
+                "AI drew from stock".to_string()
+            }
+            Phase::Draw => "AI took the discard".to_string(),
             Phase::Discard => match (
                 before_top,
                 session.table.round().discard_pile().last().copied(),

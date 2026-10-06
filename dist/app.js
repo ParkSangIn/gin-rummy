@@ -15,7 +15,7 @@ function engineCard(code) {
 
 function applyEngineState(snapshot) {
   state.playerHand = snapshot.player_hand.map(engineCard);
-  state.aiHand = makeDeck().slice(0, snapshot.opponent_hand_len);
+  state.aiHand = snapshot.opponent_hand ? snapshot.opponent_hand.map(engineCard) : makeDeck().slice(0, snapshot.opponent_hand_len);
   state.discard = snapshot.discard_pile.map(engineCard);
   state.deck = Array.from({ length: snapshot.stock_len }, (_, index) => ({ id: `stock-${index}` }));
   state.dealer = snapshot.dealer;
@@ -25,13 +25,39 @@ function applyEngineState(snapshot) {
   state.forbiddenDiscardId = snapshot.taken_discard ? engineCard(snapshot.taken_discard).id : null;
   state.drawnCardId = null;
   state.gameOver = Boolean(snapshot.result);
+  state.lastResult = snapshot.result ? {
+    winner: snapshot.result.winner,
+    points: snapshot.result.points,
+    reason: snapshot.result.kind === "dead" ? "스톡이 두 장 남아 무승부로 종료되었습니다." : `${snapshot.result.kind} 결과`,
+  } : null;
   state.aiAction = snapshot.events.at(-1)?.actor === "ai" ? snapshot.events.at(-1).action : "";
   state.log = snapshot.events.map((event) => ({ text: event.action, who: event.actor === "player" ? "you" : event.actor === "ai" ? "ai" : "system" }));
 }
 
 function engineAction(action) {
   try {
-    applyEngineState(JSON.parse(engineSubmitAction(JSON.stringify(action))));
+    const snapshot = JSON.parse(engineSubmitAction(JSON.stringify(action)));
+    const lastPlayerEvent = snapshot.events.map((event, index) => ({ event, index })).filter(({ event }) => event.actor === "player").at(-1)?.index ?? -1;
+    const aiEvents = snapshot.events.slice(lastPlayerEvent + 1).filter((event) => event.actor === "ai");
+    const drawEvent = aiEvents.find((event) => event.action.startsWith("AI drew") || event.action.startsWith("AI took"));
+    const discardEvent = aiEvents.find((event) => event.action.startsWith("AI discarded"));
+    if (drawEvent && discardEvent && !snapshot.result) {
+      const beforeDiscard = structuredClone(snapshot);
+      beforeDiscard.turn = "ai";
+      beforeDiscard.phase = "thinking";
+      beforeDiscard.opponent_hand_len += 1;
+      beforeDiscard.discard_pile = beforeDiscard.discard_pile.slice(0, -1);
+      if (drawEvent.action === "AI drew from stock") beforeDiscard.stock_len += 1;
+      beforeDiscard.events = [...snapshot.events.slice(0, lastPlayerEvent + 1), drawEvent];
+      applyEngineState(beforeDiscard);
+      render();
+      window.setTimeout(() => {
+        applyEngineState(snapshot);
+        render();
+      }, aiDelayMs());
+      return;
+    }
+    applyEngineState(snapshot);
     render();
   } catch (error) {
     showToast(error?.message || "엔진이 이 행동을 허용하지 않습니다.");
