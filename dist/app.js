@@ -1072,14 +1072,19 @@ function renderResult() {
   const result = state.lastResult;
   const playerWon = result?.winner === "player";
   const matchWinner = state.playerScore >= TARGET_SCORE ? "player" : state.aiScore >= TARGET_SCORE ? "ai" : null;
+  const handSummary = result?.winner
+    ? `마지막 핸드: ${playerWon ? "당신" : "AI"} +${result.points}점`
+    : "마지막 핸드: 무승부";
+  const finalScore = `최종 점수: 당신 ${state.playerScore}점 · AI ${state.aiScore}점`;
   el["result-kicker"].textContent = matchWinner ? "MATCH COMPLETE" : "HAND COMPLETE";
   el["result-title"].textContent = matchWinner
     ? `${matchWinner === "player" ? "당신" : "AI"}의 매치 승리`
     : result?.winner
       ? `${playerWon ? "당신" : "AI"} +${result.points}점`
       : "이번 핸드는 무승부";
-  el["result-body"].textContent = result?.reason || "";
-  el["next-hand"].textContent = matchWinner ? "새 대국" : "다음 핸드";
+  el["result-body"].textContent = matchWinner
+    ? `${handSummary}\n${result?.reason || ""}\n${finalScore}`
+    : result?.reason || "";  el["next-hand"].textContent = matchWinner ? "새 대국" : "다음 핸드";
 }
 
 function render() {
