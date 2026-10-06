@@ -5,3 +5,5 @@
 
 engine-integration/target/
 engine-integration/.test-game-id
+
+engine-integration/dist/
