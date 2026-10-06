@@ -25,10 +25,23 @@ function applyEngineState(snapshot) {
   state.forbiddenDiscardId = snapshot.taken_discard ? engineCard(snapshot.taken_discard).id : null;
   state.drawnCardId = null;
   state.gameOver = Boolean(snapshot.result);
+  if (snapshot.result && !state.engineResultRecorded) {
+    if (snapshot.result.winner === "player") state.playerScore += snapshot.result.points;
+    if (snapshot.result.winner === "ai") state.aiScore += snapshot.result.points;
+    state.engineResultRecorded = true;
+  }
+  const resultReason = {
+    dead: "스톡이 두 장 남아 무승부로 종료되었습니다.",
+    knock: "노크로 핸드가 종료되었습니다.",
+    undercut: "언더컷으로 핸드가 종료되었습니다.",
+    gin: "진으로 핸드가 종료되었습니다.",
+    big_gin: "빅 진으로 핸드가 종료되었습니다.",
+  };
   state.lastResult = snapshot.result ? {
     winner: snapshot.result.winner,
     points: snapshot.result.points,
-    reason: snapshot.result.kind === "dead" ? "스톡이 두 장 남아 무승부로 종료되었습니다." : `${snapshot.result.kind} 결과`,
+    reason: resultReason[snapshot.result.kind] || "핸드가 종료되었습니다.",
+    matchOver: state.playerScore >= TARGET_SCORE || state.aiScore >= TARGET_SCORE,
   } : null;
   state.aiAction = snapshot.events.at(-1)?.actor === "ai" ? snapshot.events.at(-1).action : "";
   state.log = snapshot.events.map((event) => ({ text: event.action, who: event.actor === "player" ? "you" : event.actor === "ai" ? "ai" : "system" }));
@@ -66,8 +79,11 @@ function engineAction(action) {
 
 function startEngineHand() {
   const previousDecisions = state?.decisions || [];
+  const scores = state ? { player: state.playerScore, ai: state.aiScore, hand: state.handNumber } : { player: 0, ai: 0, hand: 0 };
   state = freshState();
-  state.handNumber = 1;
+  state.playerScore = scores.player;
+  state.aiScore = scores.ai;
+  state.handNumber = scores.hand + 1;
   state.decisions = previousDecisions;
   state.decisionCounter = previousDecisions.length;
   try {
