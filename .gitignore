@@ -2,3 +2,6 @@
 .sites-checkout/
 *.tar.gz
 *.lnk
+
+engine-integration/target/
+engine-integration/.test-game-id
