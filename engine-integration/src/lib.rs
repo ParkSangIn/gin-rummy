@@ -268,7 +268,7 @@ pub fn start_game() -> Result<String, JsValue> {
 pub fn submit_action(request_json: &str) -> Result<String, JsValue> {
     let request: PlayerRequest = serde_json::from_str(request_json)
         .map_err(|error| JsValue::from_str(&format!("invalid action: {error}")))?;
-    let (action, label) = parse_move(request).map_err(|error| JsValue::from_str(&error))?;
+    let (mut action, mut label) = parse_move(request).map_err(|error| JsValue::from_str(&error))?;
     GAME.with(|game| {
         let mut game = game.borrow_mut();
         let session = game
@@ -276,6 +276,12 @@ pub fn submit_action(request_json: &str) -> Result<String, JsValue> {
             .ok_or_else(|| JsValue::from_str("start a game first"))?;
         if session.table.turn() != Some(Player::One) {
             return Err(JsValue::from_str("it is not the player's turn"));
+        }
+        if matches!(session.table.round().phase(), Phase::Upcard)
+            && matches!(action, HumanMove::Draw(DrawAction::TakeDiscard))
+        {
+            action = HumanMove::Upcard(UpcardAction::Take);
+            label = "took the first upcard".into();
         }
         let mut human = HumanStrategy { action };
         session

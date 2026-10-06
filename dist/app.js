@@ -560,6 +560,7 @@ function recordDecision({ type, actualKey, actualLabel, options, hand, context }
 }
 
 function drawPlayer(source) {
+  if (state.gameOver || state.turn !== "player") return;
   if (usingEngine()) {
     if (!engineReady) { showToast("엔진을 불러오는 중입니다."); return; }
     if (state.phase === "upcard" && source === "discard") engineAction({ type: "draw_discard" });
@@ -607,6 +608,7 @@ function aiDelayMs() {
 }
 
 function playerPassUpcard() {
+  if (state.gameOver || state.turn !== "player" || state.phase !== "upcard") return;
   if (usingEngine()) { if (engineReady) engineAction({ type: "pass_upcard" }); else showToast("엔진을 불러오는 중입니다."); return; }
   if (state.gameOver || state.turn !== "player" || state.phase !== "upcard") return;
   state.upcardPasses += 1;
