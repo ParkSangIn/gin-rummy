@@ -247,7 +247,9 @@ pub fn start_game() -> Result<String, JsValue> {
     } else {
         Player::Two
     };
-    let table = Table::deal(Rules::new(), dealer, &mut rng());
+    let mut rules = Rules::new();
+    rules.big_gin_bonus = None;
+    let table = Table::deal(rules, dealer, &mut rng());
     let mut session = GameSession {
         table,
         events: Vec::new(),
