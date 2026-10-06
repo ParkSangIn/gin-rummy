@@ -385,7 +385,7 @@ function startHand() {
   const upcard = state.deck.pop();
   state.discard.push(upcard);
   state.seenCards.add(upcard.id);
-  addLog(`핸드 ${state.handNumber} 시작 · 첫 버림패 ${cardLabel(upcard)}`);
+  addLog(`핸드 ${state.handNumber} 시작 · 첫 업카드 ${cardLabel(upcard)}`);
   state.turn = state.dealer === "player" ? "ai" : "player";
   state.phase = "upcard";
   persist();
@@ -475,7 +475,7 @@ function aiDelayMs() {
 function playerPassUpcard() {
   if (state.gameOver || state.turn !== "player" || state.phase !== "upcard") return;
   state.upcardPasses += 1;
-  addLog(`첫 버림패 ${cardLabel(state.discard.at(-1))} 패스`, "you");
+  addLog(`첫 업카드 ${cardLabel(state.discard.at(-1))} 패스`, "you");
   if (state.upcardPasses >= 2) {
     resolveInitialUpcardPasses();
     return;
@@ -494,7 +494,7 @@ function aiRespondToUpcard() {
   if (choice?.key !== "discard") {
     state.upcardPasses += 1;
     state.aiAction = "AI · 업카드 PASS";
-    addLog("AI가 첫 버림패를 패스함");
+    addLog("AI가 첫 업카드를 패스함");
     if (state.upcardPasses >= 2) {
       resolveInitialUpcardPasses();
       return;
@@ -510,7 +510,7 @@ function aiRespondToUpcard() {
 function resolveInitialUpcardPasses() {
   const declined = state.discard.at(-1);
   state.blockedInitialDiscardId = declined?.id || null;
-  if (declined) addLog(`첫 버림패 ${cardLabel(declined)}는 이번 첫 드로우에서 제외`);
+  if (declined) addLog(`첫 업카드 ${cardLabel(declined)}는 이번 첫 드로우에서 제외`);
   state.aiAction = "AI · 첫 업카드 PASS";
   state.phase = "draw";
   state.turn = state.dealer === "player" ? "ai" : "player";
@@ -863,7 +863,7 @@ function renderTurn() {
     el["turn-detail"].textContent = "AI 패 수가 11장이 된 뒤 설정한 간격만큼 기다리고 버립니다.";
   } else if (state.phase === "upcard") {
     el["turn-kicker"].textContent = "UPCARD";
-    el["turn-message"].textContent = `첫 버림패 ${cardLabel(state.discard.at(-1))}를 가져올까요?`;
+    el["turn-message"].textContent = `첫 업카드 ${cardLabel(state.discard.at(-1))}를 가져올까요?`;
     el["turn-detail"].textContent = "버림패를 누르면 가져옵니다. 가져가지 않으면 PASS를 누르세요.";
   } else if (state.phase === "draw") {
     el["turn-kicker"].textContent = "YOUR TURN";

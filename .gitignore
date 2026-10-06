@@ -1,3 +1,4 @@
 .tools/
 .sites-checkout/
 *.tar.gz
+*.lnk

@@ -1,0 +1,30 @@
+{
+  "game": "gin-rummy",
+  "game_target": 100,
+  "first_dealer": "random",
+  "next_dealer": "previous_hand_winner",
+  "dead_hand_dealer": "same_dealer",
+  "initial_upcard": {
+    "first_offer": "non_dealer",
+    "if_non_dealer_passes": "dealer_may_take_or_pass",
+    "if_both_pass": "non_dealer_forced_stock_draw",
+    "discard_pile_after_both_pass": "initial_upcard_remains_visible_but_is_not_drawable_on_the_forced_draw"
+  },
+  "turn": {
+    "hand_size_before_draw": 10,
+    "hand_size_after_draw": 11,
+    "draw_sources": ["stock", "discard"],
+    "discard_after_draw": true,
+    "taken_discard_cannot_be_immediately_discarded": true
+  },
+  "scoring": {
+    "knock_limit": 10,
+    "gin_bonus": 25,
+    "undercut_bonus": 25,
+    "undercut_on_tie": true,
+    "big_gin": false,
+    "box_bonus": false,
+    "game_bonus": false,
+    "shutout_bonus": false
+  }
+}
