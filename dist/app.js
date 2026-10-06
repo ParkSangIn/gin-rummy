@@ -2,6 +2,8 @@ let engineReady = false;
 let engineLoading = false;
 let engineStartGame;
 let engineSubmitAction;
+let engineActionPending = false;
+let engineAnimationToken = 0;
 
 function usingEngine() { return el.difficulty.value === "engine"; }
 function heuristicLevel() { return el.difficulty.value.replace("heuristic-", ""); }
@@ -48,8 +50,16 @@ function applyEngineState(snapshot) {
 }
 
 function engineAction(action) {
+  if (engineActionPending) return;
+  engineActionPending = true;
+  const animationToken = ++engineAnimationToken;
+  const handCountBefore = state.playerHand.length;
+  const isPlayerDraw = action.type === "draw_stock" || action.type === "draw_discard";
   try {
     const snapshot = JSON.parse(engineSubmitAction(JSON.stringify(action)));
+    if (isPlayerDraw && snapshot.player_hand.length !== handCountBefore + 1) {
+      throw new Error("엔진이 드로우 뒤의 11장 패를 반환하지 않았습니다.");
+    }
     const lastPlayerEvent = snapshot.events.map((event, index) => ({ event, index })).filter(({ event }) => event.actor === "player").at(-1)?.index ?? -1;
     const aiEvents = snapshot.events.slice(lastPlayerEvent + 1).filter((event) => event.actor === "ai");
     const drawEvent = aiEvents.find((event) => event.action.startsWith("AI drew") || event.action.startsWith("AI took"));
@@ -65,19 +75,25 @@ function engineAction(action) {
       applyEngineState(beforeDiscard);
       render();
       window.setTimeout(() => {
+        if (animationToken !== engineAnimationToken) return;
         applyEngineState(snapshot);
+        engineActionPending = false;
         render();
       }, aiDelayMs());
       return;
     }
     applyEngineState(snapshot);
+    engineActionPending = false;
     render();
   } catch (error) {
+    engineActionPending = false;
     showToast(error?.message || "엔진이 이 행동을 허용하지 않습니다.");
   }
 }
 
 function startEngineHand() {
+  engineActionPending = false;
+  engineAnimationToken += 1;
   const previousDecisions = state?.decisions || [];
   const scores = state ? { player: state.playerScore, ai: state.aiScore, hand: state.handNumber } : { player: 0, ai: 0, hand: 0 };
   state = freshState();
@@ -1014,7 +1030,7 @@ function renderTurn() {
     el["turn-detail"].textContent = "덱 또는 버림패를 선택할 수 있습니다.";
   } else {
     el["turn-kicker"].textContent = "YOUR TURN";
-    el["turn-message"].textContent = state.knockArmed ? "노크할 카드를 누르세요" : "버릴 카드를 바로 누르세요";
+    el["turn-message"].textContent = state.knockArmed ? "노크할 카드를 누르세요" : `현재 ${state.playerHand.length}장 패입니다. 버릴 카드를 바로 누르세요`;
     el["turn-detail"].textContent = state.knockArmed ? "누른 카드를 버리며 노크합니다." : "KNOCK을 누르면 노크할 카드를 고를 수 있습니다.";
   }
 }
