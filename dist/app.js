@@ -1,68 +1,3 @@
-import initEngine, { start_game as engineStartGame, submit_action as engineSubmitAction } from "./engine/gin_engine.js";
-
-let engineReady = false;
-let engineLoading = false;
-
-function engineCard(code) {
-  const suit = code.at(-1);
-  const value = code.slice(0, -1);
-  const rank = value === "A" ? 1 : value === "T" ? 10 : value === "J" ? 11 : value === "Q" ? 12 : value === "K" ? 13 : Number(value);
-  return { suit, rank, id: `${suit}${rank}` };
-}
-
-function applyEngineState(snapshot) {
-  state.playerHand = snapshot.player_hand.map(engineCard);
-  state.aiHand = makeDeck().slice(0, snapshot.opponent_hand_len);
-  state.discard = snapshot.discard_pile.map(engineCard);
-  state.deck = Array.from({ length: snapshot.stock_len }, (_, index) => ({ id: `stock-${index}` }));
-  state.dealer = snapshot.dealer;
-  state.turn = snapshot.turn || "finished";
-  state.phase = snapshot.phase;
-  state.blockedInitialDiscardId = snapshot.can_take_discard ? null : state.discard.at(-1)?.id || null;
-  state.forbiddenDiscardId = snapshot.taken_discard ? engineCard(snapshot.taken_discard).id : null;
-  state.drawnCardId = null;
-  state.gameOver = Boolean(snapshot.result);
-  state.aiAction = snapshot.events.at(-1)?.actor === "ai" ? snapshot.events.at(-1).action : "";
-  state.log = snapshot.events.map((event) => ({ text: event.action, who: event.actor === "player" ? "you" : event.actor === "ai" ? "ai" : "system" }));
-}
-
-function engineAction(action) {
-  try {
-    applyEngineState(JSON.parse(engineSubmitAction(JSON.stringify(action))));
-    render();
-  } catch (error) {
-    showToast(error?.message || "엔진이 이 행동을 허용하지 않습니다.");
-  }
-}
-
-function startEngineHand() {
-  const previousDecisions = state?.decisions || [];
-  state = freshState();
-  state.handNumber = 1;
-  state.decisions = previousDecisions;
-  state.decisionCounter = previousDecisions.length;
-  try {
-    applyEngineState(JSON.parse(engineStartGame()));
-  } catch (error) {
-    engineReady = false;
-    showToast("엔진 시작에 실패해 기존 AI로 전환했습니다.");
-    startHand();
-    return;
-  }
-  render();
-}
-
-async function loadEngine() {
-  if (engineLoading || engineReady) return;
-  engineLoading = true;
-  try {
-    await initEngine();
-    engineReady = true;
-    startEngineHand();
-  } catch (error) {
-    showToast("엔진을 불러오지 못해 기존 AI를 사용합니다.");
-  }
-}
 const SUITS = [
   { key: "S", symbol: "♠", name: "스페이드", red: false },
   { key: "H", symbol: "♥", name: "하트", red: true },
@@ -429,12 +364,10 @@ function addLog(text, who = "system") {
 
 function startMatch() {
   state = freshState();
-  if (engineReady) { startEngineHand(); return; }
   startHand();
 }
 
 function startHand() {
-  if (engineReady) { startEngineHand(); return; }
   const scores = state ? { player: state.playerScore, ai: state.aiScore, hand: state.handNumber, dealer: state.dealer } : { player: 0, ai: 0, hand: 0, dealer: null };
   const previousDecisions = state?.decisions || [];
   state = freshState();
@@ -499,11 +432,6 @@ function recordDecision({ type, actualKey, actualLabel, options, hand, context }
 }
 
 function drawPlayer(source) {
-  if (engineReady) {
-    if (state.phase === "upcard" && source === "discard") engineAction({ type: "draw_discard" });
-    else if (state.phase === "draw") engineAction({ type: source === "discard" ? "draw_discard" : "draw_stock" });
-    return;
-  }
   const canDraw = state.phase === "draw" || (state.phase === "upcard" && source === "discard");
   if (state.gameOver || state.turn !== "player" || !canDraw) return;
   if (source === "discard" && state.discard.at(-1)?.id === state.blockedInitialDiscardId) return;
@@ -545,7 +473,6 @@ function aiDelayMs() {
 }
 
 function playerPassUpcard() {
-  if (engineReady) { engineAction({ type: "pass_upcard" }); return; }
   if (state.gameOver || state.turn !== "player" || state.phase !== "upcard") return;
   state.upcardPasses += 1;
   addLog(`첫 업카드 ${cardLabel(state.discard.at(-1))} 패스`, "you");
@@ -607,11 +534,6 @@ function selectPlayerCard(cardId) {
 }
 
 function playerDiscard(knock) {
-  if (engineReady) {
-    const selected = state.playerHand.find((card) => card.id === state.selectedCardId);
-    if (selected) engineAction({ type: knock ? "knock" : "discard", card: `${RANKS[selected.rank] === "10" ? "T" : RANKS[selected.rank]}${selected.suit}` });
-    return;
-  }
   if (!state.selectedCardId || state.turn !== "player" || state.phase !== "discard") return;
   const options = bestDiscardOptions(state.playerHand, "player", state.forbiddenDiscardId);
   const selected = state.playerHand.find((card) => card.id === state.selectedCardId);
@@ -1264,4 +1186,3 @@ state.decisions = restored;
 state.decisionCounter = restored.reduce((max, decision) => Math.max(max, decision.id || 0), 0);
 startHand();
 registerWebMCP();
-loadEngine();
