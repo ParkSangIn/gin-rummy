@@ -1024,6 +1024,10 @@ function renderTurn() {
     el["turn-kicker"].textContent = "UPCARD";
     el["turn-message"].textContent = `첫 업카드 ${cardLabel(state.discard.at(-1))}를 가져올까요?`;
     el["turn-detail"].textContent = "버림패를 누르면 가져옵니다. 가져가지 않으면 PASS를 누르세요.";
+  } else if (state.phase === "layoff") {
+    el["turn-kicker"].textContent = "LAYOFF";
+    el["turn-message"].textContent = "AI 노크 후 레이오프를 계산하고 있습니다";
+    el["turn-detail"].textContent = "엔진이 가능한 레이오프를 처리한 뒤 점수를 확정합니다.";
   } else if (state.phase === "draw") {
     el["turn-kicker"].textContent = "YOUR TURN";
     el["turn-message"].textContent = "카드를 한 장 가져오세요";

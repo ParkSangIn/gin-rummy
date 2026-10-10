@@ -205,6 +205,21 @@ fn apply_ai(session: &mut GameSession) -> Result<(), String> {
     Ok(())
 }
 
+fn apply_human_layoff(session: &mut GameSession) -> Result<(), String> {
+    let mut resolved = false;
+    while session.table.turn() == Some(Player::One) && session.table.round().phase() == Phase::Layoff {
+        let mut bot = MonteCarloBot::new(rng());
+        session
+            .table
+            .step(&mut bot)
+            .map_err(|error| error.to_string())?;
+        resolved = true;
+    }
+    if resolved {
+        log(session, "player", "automatic layoff resolution");
+    }
+    Ok(())
+}
 fn parse_move(request: PlayerRequest) -> Result<(HumanMove, String), String> {
     match request {
         PlayerRequest::PassUpcard => Ok((
@@ -292,6 +307,7 @@ pub fn submit_action(request_json: &str) -> Result<String, JsValue> {
             .map_err(|error| JsValue::from_str(&error.to_string()))?;
         log(session, "player", label);
         apply_ai(session).map_err(|error| JsValue::from_str(&error))?;
+        apply_human_layoff(session).map_err(|error| JsValue::from_str(&error))?;
         encode(&view(session))
     })
 }
