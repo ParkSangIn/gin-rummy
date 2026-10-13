@@ -975,6 +975,36 @@ function finishWithoutScore() {
   render();
 }
 
+const cardFaceCache = new Map();
+
+function cardFaceSource(card) {
+  const key = `${card.rank}${card.suit}`;
+  if (cardFaceCache.has(key)) return cardFaceCache.get(key);
+
+  const rank = RANKS[card.rank];
+  const suit = suitInfo(card);
+  const rankSize = rank === "10" ? 39 : 48;
+  const color = suit.red ? "#cf2624" : "#111111";
+  // The card is a self-contained image: one top index is reused for the
+  // lower corner by rotating its SVG group. This guarantees every deal uses
+  // the same printing, spacing, and proportions without a 52-file image set.
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 350" aria-hidden="true">
+    <rect x="1.5" y="1.5" width="247" height="347" rx="7" fill="#fff" stroke="#296144" stroke-width="3"/>
+    <g fill="${color}" font-family="Georgia, 'Times New Roman', serif" font-weight="700">
+      <text x="17" y="61" font-size="${rankSize}">${rank}</text>
+      <text x="19" y="103" font-size="42">${suit.symbol}</text>
+      <text x="125" y="228" text-anchor="middle" font-size="142">${suit.symbol}</text>
+      <g transform="rotate(180 125 175)">
+        <text x="17" y="61" font-size="${rankSize}">${rank}</text>
+        <text x="19" y="103" font-size="42">${suit.symbol}</text>
+      </g>
+    </g>
+  </svg>`;
+  const source = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+  cardFaceCache.set(key, source);
+  return source;
+}
+
 function createCardElement(card, { hidden = false, button = false, selected = false, compact = false } = {}) {
   const node = document.createElement(button ? "button" : "span");
   node.className = `card${hidden ? " card-back" : suitInfo(card)?.red ? " red" : ""}${selected ? " selected" : ""}`;
@@ -990,17 +1020,13 @@ function createCardElement(card, { hidden = false, button = false, selected = fa
     node.append(pattern);
     return node;
   }
-  const index = document.createElement("span");
-  index.className = "card-index card-index-top";
-  index.innerHTML = `<span class="card-value">${RANKS[card.rank]}</span><span class="card-index-suit">${suitInfo(card).symbol}</span>`;
-  const pip = document.createElement("span");
-  pip.className = "card-pip";
-  pip.textContent = suitInfo(card).symbol;
-  // Standard playing cards repeat their value in the opposite corner.  Reuse
-  // the same DOM rather than requiring a separate image for every card face.
-  const bottomIndex = index.cloneNode(true);
-  bottomIndex.className = "card-index card-index-bottom";
-  node.append(index, pip, bottomIndex);
+  node.classList.add("card-artwork");
+  const artwork = document.createElement("img");
+  artwork.className = "card-face-art";
+  artwork.src = cardFaceSource(card);
+  artwork.alt = "";
+  artwork.draggable = false;
+  node.append(artwork);
   return node;
 }
 
