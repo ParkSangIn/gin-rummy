@@ -2021,3 +2021,21 @@ button.card.selected {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Must follow the fixed-table rules above: scale the entire authored table
+   after layout, so desktop cards and panels keep their exact proportions. */
+@media (min-width: 981px) {
+  main {
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  .game-layout {
+    width: 1265px;
+    height: 714px;
+    min-height: 0;
+    margin: 0 auto;
+    transform: scale(var(--table-scale, 1));
+    transform-origin: top center;
+  }
+}
