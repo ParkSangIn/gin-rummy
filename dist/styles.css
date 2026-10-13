@@ -1609,7 +1609,8 @@ button.card.selected {
   position: absolute;
   z-index: 3;
   right: 0;
-  bottom: 8px;
+  /* Taller 2.5:3.5 cards need a little breathing room above the table edge. */
+  bottom: 28px;
   left: 0;
   height: 370px;
   padding: 0 16px;
