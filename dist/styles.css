@@ -557,6 +557,12 @@ button.card.selected {
   left: 8px;
 }
 
+.card-index-bottom {
+  right: 8px;
+  bottom: 7px;
+  transform: rotate(180deg);
+}
+
 .card-value {
   font-size: calc(var(--card-width) * .32);
 }
@@ -1501,7 +1507,7 @@ button.card.selected {
 
 .opponent-hand .card {
   --card-width: 94px;
-  height: 112px;
+  height: calc(var(--card-width) * 1.4);
   border: 5px solid #f7f7f2;
   border-radius: 4px;
   box-shadow: none;
@@ -1527,7 +1533,7 @@ button.card.selected {
 .opponent-hand.final-hand .final-ai-card {
   --card-width: clamp(82px, 8.7vw, 112px);
   position: absolute;
-  height: calc(var(--card-width) * 1.18);
+  height: calc(var(--card-width) * 1.4);
   margin: 0;
   border: 1px solid #d4d4d4;
   border-radius: 3px;
@@ -1573,7 +1579,7 @@ button.card.selected {
 
 .table-center .card {
   --card-width: clamp(78px, 7.5vw, 102px);
-  height: calc(var(--card-width) * 1.18);
+  height: calc(var(--card-width) * 1.4);
   border-radius: 4px;
   box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2);
 }
@@ -1618,7 +1624,7 @@ button.card.selected {
 
 .player-hand {
   --layout-card-width: clamp(82px, 8.7vw, 112px);
-  --layout-card-height: calc(var(--layout-card-width) * 1.18);
+  --layout-card-height: calc(var(--layout-card-width) * 1.4);
   --layout-row-step: clamp(30px, 3.4vw, 40px);
   position: relative;
   width: 76%;
@@ -1941,7 +1947,7 @@ button.card.selected {
 
   .opponent-hand .card {
     --card-width: 68px;
-    height: 82px;
+    height: calc(var(--card-width) * 1.4);
   }
 
   .opponent-hand .card + .card {
