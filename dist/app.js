@@ -65,6 +65,13 @@ function engineAction(action) {
     const drawEvent = aiEvents.find((event) => event.action.startsWith("AI drew") || event.action.startsWith("AI took"));
     const discardEvent = aiEvents.find((event) => event.action.startsWith("AI discarded"));
     if (drawEvent && discardEvent && !snapshot.result) {
+      const beforeDraw = structuredClone(snapshot);
+      beforeDraw.turn = "ai";
+      beforeDraw.phase = "thinking";
+      beforeDraw.discard_pile = beforeDraw.discard_pile.slice(0, -1);
+      if (drawEvent.action === "AI drew from stock") beforeDraw.stock_len += 1;
+      beforeDraw.events = snapshot.events.slice(0, lastPlayerEvent + 1);
+
       const beforeDiscard = structuredClone(snapshot);
       beforeDiscard.turn = "ai";
       beforeDiscard.phase = "thinking";
@@ -72,14 +79,27 @@ function engineAction(action) {
       beforeDiscard.discard_pile = beforeDiscard.discard_pile.slice(0, -1);
       if (drawEvent.action === "AI drew from stock") beforeDiscard.stock_len += 1;
       beforeDiscard.events = [...snapshot.events.slice(0, lastPlayerEvent + 1), drawEvent];
-      applyEngineState(beforeDiscard);
-      render();
-      window.setTimeout(() => {
+
+      const showDiscard = () => {
         if (animationToken !== engineAnimationToken) return;
-        applyEngineState(snapshot);
-        engineActionPending = false;
+        applyEngineState(beforeDiscard);
         render();
-      }, aiDelayMs());
+        window.setTimeout(() => {
+          if (animationToken !== engineAnimationToken) return;
+          applyEngineState(snapshot);
+          engineActionPending = false;
+          render();
+        }, aiDelayMs());
+      };
+
+      // A human gets a moment to see the discarded card before the AI chooses a draw source.
+      if (action.type === "discard") {
+        applyEngineState(beforeDraw);
+        render();
+        window.setTimeout(showDiscard, aiDelayMs());
+      } else {
+        showDiscard();
+      }
       return;
     }
     applyEngineState(snapshot);
@@ -620,7 +640,7 @@ function drawPlayer(source) {
 }
 
 function aiDelayMs() {
-  return Number.parseInt(el["ai-delay"].value, 10) || 1000;
+  return Number.parseInt(el["ai-delay"].value, 10) || 600;
 }
 
 function playerPassUpcard() {
