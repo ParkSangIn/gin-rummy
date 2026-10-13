@@ -996,11 +996,7 @@ function createCardElement(card, { hidden = false, button = false, selected = fa
   const pip = document.createElement("span");
   pip.className = "card-pip";
   pip.textContent = suitInfo(card).symbol;
-  // Standard playing cards repeat their value in the opposite corner.  Reuse
-  // the same DOM rather than requiring a separate image for every card face.
-  const bottomIndex = index.cloneNode(true);
-  bottomIndex.className = "card-index card-index-bottom";
-  node.append(index, pip, bottomIndex);
+  node.append(index, pip);
   return node;
 }
 

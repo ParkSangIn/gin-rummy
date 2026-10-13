@@ -575,10 +575,10 @@ button.card.selected {
 
 .card-pip {
   position: absolute;
-  top: 63%;
+  top: 55%;
   left: 50%;
   font-family: Georgia, "Times New Roman", serif;
-  font-size: calc(var(--card-width) * .62);
+  font-size: calc(var(--card-width) * .82);
   line-height: 1;
   transform: translate(-50%, -50%);
 }
@@ -1694,7 +1694,9 @@ button.card.selected {
 
 .player-hand .card-pip,
 .table-center .card-pip {
-  font-size: calc(var(--card-width) * .58);
+  /* This is intentionally wider than the exposed part of neighbouring cards:
+     consecutive ranks partially cover the central suit, like a real rack. */
+  font-size: calc(var(--card-width) * .86);
 }
 
 .move-actions {
