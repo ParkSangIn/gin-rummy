@@ -34,7 +34,7 @@
 
             <div class="table-center">
               <button id="stock-pile" class="pile-button" aria-label="덱에서 카드 뽑기">
-                <span class="card card-back"><span class="back-pattern">♠</span></span>
+                <span class="card card-back"></span>
                 <span id="stock-count" class="pile-label"></span>
               </button>
               <div class="turn-panel" aria-live="polite">
@@ -130,6 +130,18 @@
                   <option value="2000">2.0초</option>
                 </select>
               </label>
+              <div class="card-tuning" aria-label="카드 모양 조절">
+                <strong>카드 모양 조절</strong>
+                <label for="rank-scale">랭크 크기 <output id="rank-scale-value">32%</output>
+                  <input id="rank-scale" type="range" min="20" max="45" step="1" value="32" />
+                </label>
+                <label for="corner-suit-scale">작은 수트 크기 <output id="corner-suit-scale-value">24%</output>
+                  <input id="corner-suit-scale" type="range" min="14" max="34" step="1" value="24" />
+                </label>
+                <label for="center-pip-x">중앙 수트 좌우 <output id="center-pip-x-value">0px</output>
+                  <input id="center-pip-x" type="range" min="-30" max="30" step="1" value="0" />
+                </label>
+              </div>
               <p class="engine-note"><strong>현재 AI</strong> 멜드 전수계산 + 미지 카드 확률평가</p>
             </section>
 
@@ -193,6 +205,6 @@
     </main>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
-    <script src="./app.js?v=plain-card-backs-1"></script>
+    <script src="./app.js?v=card-tuning-1"></script>
   </body>
 </html>

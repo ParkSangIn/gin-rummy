@@ -11,7 +11,7 @@
   --accent-2: #6ed7a0;
   --danger: #ff6b6b;
   --card-width: clamp(48px, 5.3vw, 72px);
-  --card-height: calc(var(--card-width) * 1.4);
+  --card-height: calc(var(--card-width) * 1.17);
   font-family: Inter, Pretendard, "Noto Sans KR", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-synthesis: none;
 }
@@ -564,19 +564,19 @@ button.card.selected {
 }
 
 .card-value {
-  font-size: calc(var(--card-width) * .32);
+  font-size: calc(var(--card-width) * var(--card-rank-scale, .32));
 }
 
 .card-index-suit {
   font-family: Georgia, "Times New Roman", serif;
-  font-size: calc(var(--card-width) * .24);
+  font-size: calc(var(--card-width) * var(--card-corner-suit-scale, .24));
   line-height: 1;
 }
 
 .card-pip {
   position: absolute;
   top: 55%;
-  left: 50%;
+  left: calc(50% + var(--card-center-pip-x, 0px));
   font-family: Georgia, "Times New Roman", serif;
   font-size: calc(var(--card-width) * .82);
   line-height: 1;
@@ -1492,7 +1492,7 @@ button.card.selected {
 
 .opponent-hand .card {
   --card-width: 94px;
-  height: calc(var(--card-width) * 1.4);
+  height: calc(var(--card-width) * 1.17);
   border: 5px solid #f7f7f2;
   border-radius: 4px;
   box-shadow: none;
@@ -1518,7 +1518,7 @@ button.card.selected {
 .opponent-hand.final-hand .final-ai-card {
   --card-width: clamp(82px, 8.7vw, 112px);
   position: absolute;
-  height: calc(var(--card-width) * 1.4);
+  height: calc(var(--card-width) * 1.17);
   margin: 0;
   border: 1px solid #d4d4d4;
   border-radius: 3px;
@@ -1564,7 +1564,7 @@ button.card.selected {
 
 .table-center .card {
   --card-width: clamp(78px, 7.5vw, 102px);
-  height: calc(var(--card-width) * 1.4);
+  height: calc(var(--card-width) * 1.17);
   border-radius: 4px;
   box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2);
 }
@@ -1610,7 +1610,7 @@ button.card.selected {
 
 .player-hand {
   --layout-card-width: clamp(82px, 8.7vw, 112px);
-  --layout-card-height: calc(var(--layout-card-width) * 1.4);
+  --layout-card-height: calc(var(--layout-card-width) * 1.17);
   --layout-row-step: clamp(30px, 3.4vw, 40px);
   position: relative;
   width: 76%;
@@ -1669,12 +1669,12 @@ button.card.selected {
 
 .player-hand .card-value,
 .table-center .card-value {
-  font-size: calc(var(--card-width) * .32);
+  font-size: calc(var(--card-width) * var(--card-rank-scale, .32));
 }
 
 .player-hand .card-index-suit,
 .table-center .card-index-suit {
-  font-size: calc(var(--card-width) * .24);
+  font-size: calc(var(--card-width) * var(--card-corner-suit-scale, .24));
 }
 
 .player-hand .card-pip,
@@ -1829,6 +1829,40 @@ button.card.selected {
   font-size: 12px;
 }
 
+.card-tuning {
+  display: grid;
+  gap: 7px;
+  margin-top: 12px;
+  padding: 10px;
+  border-top: 1px solid rgba(23, 78, 109, 0.18);
+}
+
+.card-tuning > strong {
+  color: #263846;
+  font-size: 12px;
+}
+
+.card-tuning label {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 3px 8px;
+  align-items: center;
+  color: #31596d;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.card-tuning output {
+  color: #17212a;
+  font-variant-numeric: tabular-nums;
+}
+
+.card-tuning input {
+  grid-column: 1 / -1;
+  width: 100%;
+  accent-color: #2478a1;
+}
+
 .side-panel .game-log li {
   border-left-color: #6ca9c7;
 }
@@ -1879,7 +1913,7 @@ button.card.selected {
 .snapshot-hand .snapshot-card {
   --card-width: 72px;
   position: absolute;
-  height: calc(var(--card-width) * 1.4);
+  height: calc(var(--card-width) * 1.17);
   border-radius: 3px;
 }
 
@@ -1935,7 +1969,7 @@ button.card.selected {
 
   .opponent-hand .card {
     --card-width: 68px;
-    height: calc(var(--card-width) * 1.4);
+    height: calc(var(--card-width) * 1.17);
   }
 
   .opponent-hand .card + .card {

@@ -203,6 +203,7 @@ const SUITS = [
 const RANKS = ["", "A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
 const TARGET_SCORE = 100;
 const STORAGE_KEY = "gin-lab-ai-session-v1";
+const CARD_TUNING_KEY = "gin-lab-card-tuning-v1";
 const FIXED_SUIT_ROWS = { H: 0, C: 1, D: 2, S: 3 };
 
 const el = Object.fromEntries(
@@ -227,6 +228,12 @@ const el = Object.fromEntries(
     "knock-action",
     "pass-action",
     "ai-delay",
+    "rank-scale",
+    "rank-scale-value",
+    "corner-suit-scale",
+    "corner-suit-scale-value",
+    "center-pip-x",
+    "center-pip-x-value",
     "difficulty",
     "new-match",
     "brand-button",
@@ -1399,6 +1406,37 @@ el["next-hand"].addEventListener("click", () => {
   else if (usingEngine()) startEngineHand(true);
   else startHand();
 });
+
+function applyCardTuning() {
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(CARD_TUNING_KEY) || "{}"); } catch { /* use defaults */ }
+  const tuning = {
+    rankScale: Number(saved.rankScale) || 32,
+    cornerSuitScale: Number(saved.cornerSuitScale) || 24,
+    centerPipX: Number(saved.centerPipX) || 0,
+  };
+  el["rank-scale"].value = tuning.rankScale;
+  el["corner-suit-scale"].value = tuning.cornerSuitScale;
+  el["center-pip-x"].value = tuning.centerPipX;
+  document.documentElement.style.setProperty("--card-rank-scale", tuning.rankScale / 100);
+  document.documentElement.style.setProperty("--card-corner-suit-scale", tuning.cornerSuitScale / 100);
+  document.documentElement.style.setProperty("--card-center-pip-x", `${tuning.centerPipX}px`);
+  el["rank-scale-value"].value = `${tuning.rankScale}%`;
+  el["corner-suit-scale-value"].value = `${tuning.cornerSuitScale}%`;
+  el["center-pip-x-value"].value = `${tuning.centerPipX}px`;
+}
+
+function saveCardTuning() {
+  localStorage.setItem(CARD_TUNING_KEY, JSON.stringify({
+    rankScale: Number(el["rank-scale"].value),
+    cornerSuitScale: Number(el["corner-suit-scale"].value),
+    centerPipX: Number(el["center-pip-x"].value),
+  }));
+  applyCardTuning();
+}
+
+applyCardTuning();
+["rank-scale", "corner-suit-scale", "center-pip-x"].forEach((id) => el[id].addEventListener("input", saveCardTuning));
 el["difference-only"].addEventListener("change", renderReview);
 document.querySelectorAll(".tab-button").forEach((button) => button.addEventListener("click", () => showView(button.dataset.view)));
 document.querySelectorAll("[data-go-game]").forEach((button) => button.addEventListener("click", () => showView("game")));
