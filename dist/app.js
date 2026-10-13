@@ -1,8 +1,8 @@
 let engineReady = false;
 let engineLoading = false;
-let engineStartGame;
-let engineNextHand;
-let engineSubmitAction;
+let engineWorker;
+let engineRequestId = 0;
+const engineRequests = new Map();
 let engineActionPending = false;
 let engineAnimationToken = 0;
 
@@ -47,14 +47,37 @@ function applyEngineState(snapshot) {
   state.log = snapshot.events.map((event) => ({ text: event.action, who: event.actor === "player" ? "you" : event.actor === "ai" ? "ai" : "system" }));
 }
 
-function engineAction(action) {
+function engineCall(method, argument) {
+  return new Promise((resolve, reject) => {
+    const id = ++engineRequestId;
+    engineRequests.set(id, { resolve, reject });
+    engineWorker.postMessage({ id, method, argument });
+  });
+}
+
+function showEngineThinking(action) {
+  if (action.type !== "discard") return;
+  const discarded = state.playerHand.find((card) => card.id === engineCard(action.card).id);
+  if (!discarded) return;
+  state.playerHand = state.playerHand.filter((card) => card.id !== discarded.id);
+  state.discard = [...state.discard, discarded];
+  state.selectedCardId = null;
+  state.turn = "ai";
+  state.phase = "thinking";
+  state.aiAction = "AI가 다음 수를 계산 중입니다…";
+  render();
+}
+
+async function engineAction(action) {
   if (engineActionPending) return;
   engineActionPending = true;
   const animationToken = ++engineAnimationToken;
   const handCountBefore = state.playerHand.length;
   const isPlayerDraw = action.type === "draw_stock" || action.type === "draw_discard";
+  const thinkingStarted = performance.now();
+  showEngineThinking(action);
   try {
-    const snapshot = JSON.parse(engineSubmitAction(JSON.stringify(action)));
+    const snapshot = JSON.parse(await engineCall("submit_action", JSON.stringify(action)));
     if (isPlayerDraw && snapshot.player_hand.length !== handCountBefore + 1) {
       throw new Error("엔진이 드로우 뒤의 11장 패를 반환하지 않았습니다.");
     }
@@ -95,7 +118,8 @@ function engineAction(action) {
       if (action.type === "discard") {
         applyEngineState(beforeDraw);
         render();
-        window.setTimeout(showDiscard, aiDelayMs());
+        const remainingDelay = Math.max(0, aiDelayMs() - (performance.now() - thinkingStarted));
+        window.setTimeout(showDiscard, remainingDelay);
       } else {
         showDiscard();
       }
@@ -110,7 +134,7 @@ function engineAction(action) {
   }
 }
 
-function startEngineHand(nextHand = false) {
+async function startEngineHand(nextHand = false) {
   engineActionPending = false;
   engineAnimationToken += 1;
   const previousDecisions = state?.decisions || [];
@@ -120,7 +144,7 @@ function startEngineHand(nextHand = false) {
   state.decisions = previousDecisions;
   state.decisionCounter = previousDecisions.length;
   try {
-    applyEngineState(JSON.parse(nextHand ? engineNextHand() : engineStartGame()));
+    applyEngineState(JSON.parse(await engineCall(nextHand ? "next_hand" : "start_game")));
     render();
   } catch (error) {
     engineReady = false;
@@ -136,11 +160,19 @@ async function loadEngine() {
   if (engineLoading || engineReady) return;
   engineLoading = true;
   try {
-    const module = await import("./engine/gin_engine.js");
-    await module.default();
-    engineStartGame = module.start_game;
-    engineNextHand = module.next_hand;
-    engineSubmitAction = module.submit_action;
+    engineWorker = new Worker("./engine-worker.js", { type: "module" });
+    engineWorker.onmessage = ({ data }) => {
+      const request = engineRequests.get(data.id);
+      if (!request) return;
+      engineRequests.delete(data.id);
+      if (data.error) request.reject(new Error(data.error));
+      else request.resolve(data.result);
+    };
+    engineWorker.onerror = (event) => {
+      for (const { reject } of engineRequests.values()) reject(event.error || new Error("engine worker failed"));
+      engineRequests.clear();
+    };
+    await engineCall("init");
     engineReady = true;
     if (usingEngine()) startEngineHand();
   } catch (error) {
