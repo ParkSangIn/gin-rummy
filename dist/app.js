@@ -984,10 +984,6 @@ function createCardElement(card, { hidden = false, button = false, selected = fa
   }
   if (compact) node.classList.add("compact-card");
   if (hidden) {
-    const pattern = document.createElement("span");
-    pattern.className = "back-pattern";
-    pattern.textContent = "♠";
-    node.append(pattern);
     return node;
   }
   const index = document.createElement("span");
