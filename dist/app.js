@@ -69,6 +69,7 @@ function engineAction(action) {
       beforeDraw.turn = "ai";
       beforeDraw.phase = "thinking";
       beforeDraw.discard_pile = beforeDraw.discard_pile.slice(0, -1);
+      if (drawEvent.action === "AI took the discard") beforeDraw.discard_pile.push(action.card);
       if (drawEvent.action === "AI drew from stock") beforeDraw.stock_len += 1;
       beforeDraw.events = snapshot.events.slice(0, lastPlayerEvent + 1);
 
