@@ -5,7 +5,7 @@
 
 use std::{cell::RefCell, str::FromStr};
 
-use gin_rummy::{best_melds, Card, Phase, Player, Rules};
+use gin_rummy::{best_melds, Card, Game, Phase, Player, Rules};
 use gin_rummy_engine::{
     DrawAction, MonteCarloBot, Strategy, Table, TurnAction, UpcardAction, View,
 };
@@ -18,6 +18,7 @@ thread_local! {
 }
 
 struct GameSession {
+    game: Game,
     table: Table,
     events: Vec<GameEvent>,
 }
@@ -44,6 +45,11 @@ struct GameView {
     taken_discard: Option<String>,
     deadwood: u8,
     result: Option<RoundOutcome>,
+    player_score: u16,
+    ai_score: u16,
+    target_score: u16,
+    match_over: bool,
+    match_winner: Option<&'static str>,
     events: Vec<GameEvent>,
 }
 
@@ -163,9 +169,31 @@ fn view(session: &GameSession) -> GameView {
         taken_discard: view.taken_discard().map(card_code),
         deadwood: view.deadwood(),
         result: outcome,
+        player_score: session.game.score(Player::One),
+        ai_score: session.game.score(Player::Two),
+        target_score: session.game.rules().game_target,
+        match_over: session.game.is_over(),
+        match_winner: session.game.winner().map(player_name),
 
         events: session.events.clone(),
     }
+}
+
+/// Deal a new round while preserving the match score and next-dealer rule.
+/// The table receives those public match facts so score-aware strategies can
+/// evaluate this hand in the context of the race to the game target.
+fn deal_next_round(game: &Game) -> Table {
+    Table::new(game.deal(&mut rng())).scores([
+        game.score(Player::One),
+        game.score(Player::Two),
+    ])
+}
+
+fn record_finished_round(session: &mut GameSession) -> Result<(), String> {
+    let Some(result) = session.table.round().result() else {
+        return Ok(());
+    };
+    session.game.record(result).map_err(|error| error.to_string())
 }
 
 fn apply_ai(session: &mut GameSession) -> Result<(), String> {
@@ -254,7 +282,7 @@ fn encode(value: &GameView) -> Result<String, JsValue> {
     serde_json::to_string(value).map_err(|error| JsValue::from_str(&error.to_string()))
 }
 
-/// Starts a new hand with the dealer chosen randomly.
+/// Starts a new 100-point match with the first dealer chosen randomly.
 #[wasm_bindgen]
 pub fn start_game() -> Result<String, JsValue> {
     let dealer = if rand::random() {
@@ -264,8 +292,10 @@ pub fn start_game() -> Result<String, JsValue> {
     };
     let mut rules = Rules::new();
     rules.big_gin_bonus = None;
-    let table = Table::deal(rules, dealer, &mut rng());
+    let game = Game::new(rules, dealer);
+    let table = deal_next_round(&game);
     let mut session = GameSession {
+        game,
         table,
         events: Vec::new(),
     };
@@ -278,6 +308,33 @@ pub fn start_game() -> Result<String, JsValue> {
     let response = encode(&view(&session))?;
     GAME.with(|game| *game.borrow_mut() = Some(session));
     Ok(response)
+}
+
+/// Starts the next hand of the active match. A completed match must be
+/// restarted with `start_game`, preserving the engine's score settlement.
+#[wasm_bindgen]
+pub fn next_hand() -> Result<String, JsValue> {
+    GAME.with(|game| {
+        let mut game = game.borrow_mut();
+        let session = game
+            .as_mut()
+            .ok_or_else(|| JsValue::from_str("start a game first"))?;
+        if session.table.round().result().is_none() {
+            return Err(JsValue::from_str("finish the current hand first"));
+        }
+        if session.game.is_over() {
+            return Err(JsValue::from_str("the match is over; start a new match"));
+        }
+        session.table = deal_next_round(&session.game);
+        session.events.clear();
+        log(
+            session,
+            "system",
+            format!("New hand; {} deals", player_name(session.table.round().dealer())),
+        );
+        apply_ai(session).map_err(|error| JsValue::from_str(&error))?;
+        encode(&view(session))
+    })
 }
 
 /// Applies one player action encoded as the documented JSON request.
@@ -308,6 +365,7 @@ pub fn submit_action(request_json: &str) -> Result<String, JsValue> {
         log(session, "player", label);
         apply_ai(session).map_err(|error| JsValue::from_str(&error))?;
         apply_human_layoff(session).map_err(|error| JsValue::from_str(&error))?;
+        record_finished_round(session).map_err(|error| JsValue::from_str(&error))?;
         encode(&view(session))
     })
 }

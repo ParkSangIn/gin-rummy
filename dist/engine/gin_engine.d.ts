@@ -7,7 +7,13 @@
 export function current_game(): string;
 
 /**
- * Starts a new hand with the dealer chosen randomly.
+ * Starts the next hand of the active match. A completed match must be
+ * restarted with `start_game`, preserving the engine's score settlement.
+ */
+export function next_hand(): string;
+
+/**
+ * Starts a new 100-point match with the first dealer chosen randomly.
  */
 export function start_game(): string;
 
@@ -21,6 +27,7 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 export interface InitOutput {
     readonly memory: WebAssembly.Memory;
     readonly current_game: () => [number, number, number, number];
+    readonly next_hand: () => [number, number, number, number];
     readonly start_game: () => [number, number, number, number];
     readonly submit_action: (a: number, b: number) => [number, number, number, number];
     readonly __wbindgen_exn_store: (a: number) => void;

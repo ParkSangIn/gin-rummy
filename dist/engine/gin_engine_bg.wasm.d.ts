@@ -2,6 +2,7 @@
 /* eslint-disable */
 export const memory: WebAssembly.Memory;
 export const current_game: () => [number, number, number, number];
+export const next_hand: () => [number, number, number, number];
 export const start_game: () => [number, number, number, number];
 export const submit_action: (a: number, b: number) => [number, number, number, number];
 export const __wbindgen_exn_store: (a: number) => void;

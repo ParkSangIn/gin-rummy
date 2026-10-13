@@ -1,6 +1,7 @@
 let engineReady = false;
 let engineLoading = false;
 let engineStartGame;
+let engineNextHand;
 let engineSubmitAction;
 let engineActionPending = false;
 let engineAnimationToken = 0;
@@ -26,12 +27,9 @@ function applyEngineState(snapshot) {
   state.blockedInitialDiscardId = snapshot.can_take_discard ? null : state.discard.at(-1)?.id || null;
   state.forbiddenDiscardId = snapshot.taken_discard ? engineCard(snapshot.taken_discard).id : null;
   state.drawnCardId = null;
+  state.playerScore = snapshot.player_score;
+  state.aiScore = snapshot.ai_score;
   state.gameOver = Boolean(snapshot.result);
-  if (snapshot.result && !state.engineResultRecorded) {
-    if (snapshot.result.winner === "player") state.playerScore += snapshot.result.points;
-    if (snapshot.result.winner === "ai") state.aiScore += snapshot.result.points;
-    state.engineResultRecorded = true;
-  }
   const resultReason = {
     dead: "스톡이 두 장 남아 무승부로 종료되었습니다.",
     knock: "노크로 핸드가 종료되었습니다.",
@@ -43,7 +41,7 @@ function applyEngineState(snapshot) {
     winner: snapshot.result.winner,
     points: snapshot.result.points,
     reason: resultReason[snapshot.result.kind] || "핸드가 종료되었습니다.",
-    matchOver: state.playerScore >= TARGET_SCORE || state.aiScore >= TARGET_SCORE,
+    matchOver: snapshot.match_over,
   } : null;
   state.aiAction = snapshot.events.at(-1)?.actor === "ai" ? snapshot.events.at(-1).action : "";
   state.log = snapshot.events.map((event) => ({ text: event.action, who: event.actor === "player" ? "you" : event.actor === "ai" ? "ai" : "system" }));
@@ -112,19 +110,17 @@ function engineAction(action) {
   }
 }
 
-function startEngineHand() {
+function startEngineHand(nextHand = false) {
   engineActionPending = false;
   engineAnimationToken += 1;
   const previousDecisions = state?.decisions || [];
-  const scores = state ? { player: state.playerScore, ai: state.aiScore, hand: state.handNumber } : { player: 0, ai: 0, hand: 0 };
+  const previousHandNumber = state?.handNumber || 0;
   state = freshState();
-  state.playerScore = scores.player;
-  state.aiScore = scores.ai;
-  state.handNumber = scores.hand + 1;
+  state.handNumber = nextHand ? previousHandNumber + 1 : 1;
   state.decisions = previousDecisions;
   state.decisionCounter = previousDecisions.length;
   try {
-    applyEngineState(JSON.parse(engineStartGame()));
+    applyEngineState(JSON.parse(nextHand ? engineNextHand() : engineStartGame()));
     render();
   } catch (error) {
     engineReady = false;
@@ -143,6 +139,7 @@ async function loadEngine() {
     const module = await import("./engine/gin_engine.js");
     await module.default();
     engineStartGame = module.start_game;
+    engineNextHand = module.next_hand;
     engineSubmitAction = module.submit_action;
     engineReady = true;
     if (usingEngine()) startEngineHand();
@@ -1363,6 +1360,7 @@ el["brand-button"].addEventListener("click", () => showView("game"));
 el["open-review"].addEventListener("click", () => showView("review"));
 el["next-hand"].addEventListener("click", () => {
   if (state.lastResult?.matchOver) startMatch();
+  else if (usingEngine()) startEngineHand(true);
   else startHand();
 });
 el["difference-only"].addEventListener("change", renderReview);

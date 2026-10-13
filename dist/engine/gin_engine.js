@@ -24,7 +24,31 @@ export function current_game() {
 }
 
 /**
- * Starts a new hand with the dealer chosen randomly.
+ * Starts the next hand of the active match. A completed match must be
+ * restarted with `start_game`, preserving the engine's score settlement.
+ * @returns {string}
+ */
+export function next_hand() {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        const ret = wasm.next_hand();
+        var ptr1 = ret[0];
+        var len1 = ret[1];
+        if (ret[3]) {
+            ptr1 = 0; len1 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred2_0 = ptr1;
+        deferred2_1 = len1;
+        return getStringFromWasm0(ptr1, len1);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
+}
+
+/**
+ * Starts a new 100-point match with the first dealer chosen randomly.
  * @returns {string}
  */
 export function start_game() {
