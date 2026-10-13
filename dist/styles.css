@@ -174,6 +174,246 @@ select:hover {
   margin: 0 auto;
 }
 
+/* Desktop table mode: the game itself keeps the 16:9 proportion of the
+   reference table. Extra-wide displays receive quiet side gutters instead
+   of stretching cards or the board. */
+@media (min-width: 981px) {
+  :root {
+    --card-width: clamp(48px, 7.4dvh, 82px);
+  }
+
+  html,
+  body,
+  main {
+    min-height: 100dvh;
+  }
+
+  body {
+    overflow: hidden;
+    background: #0b0e0d;
+  }
+
+  .game-layout {
+    grid-template-columns: 71% 29%;
+    width: min(100vw, calc(100dvh * 16 / 9));
+    height: 100dvh;
+    min-height: 0;
+    margin: 0 auto;
+    overflow: hidden;
+    aspect-ratio: 16 / 9;
+    box-shadow: 0 0 80px rgba(0, 0, 0, 0.46);
+  }
+
+  .game-board {
+    min-height: 0;
+    grid-template-rows: 29% 37% 34%;
+    background:
+      radial-gradient(circle at 50% 48%, rgba(255, 255, 255, 0.055), transparent 48%),
+      #1f7039;
+  }
+
+  .game-board::before {
+    inset: 0;
+    border: 0;
+    border-radius: 0;
+    background:
+      linear-gradient(rgba(0, 0, 0, 0.045), rgba(0, 0, 0, 0.045)) 0 24%,
+      linear-gradient(rgba(0, 0, 0, 0.045), rgba(0, 0, 0, 0.045)) 0 51%,
+      linear-gradient(rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.035)) 0 76%;
+    background-repeat: no-repeat;
+    background-size: 100% 1px;
+  }
+
+  .player-zone {
+    gap: 8px;
+    padding: clamp(12px, 2.1dvh, 24px);
+  }
+
+  .human-zone {
+    padding-bottom: clamp(16px, 2.4dvh, 28px);
+  }
+
+  .table-center {
+    grid-template-columns: minmax(86px, 1fr) minmax(150px, 1.1fr) minmax(86px, 1fr);
+    gap: clamp(18px, 4dvh, 54px);
+    padding: 8px clamp(28px, 6dvh, 90px);
+  }
+
+  .side-panel {
+    overflow: hidden;
+    border-left: 1px solid rgba(25, 67, 91, 0.35);
+    background: #8ac7e8;
+    color: #152b37;
+  }
+
+  .topbar {
+    position: static;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    min-height: 0;
+    padding: 12px;
+    border-bottom: 1px solid rgba(23, 59, 79, 0.32);
+    background: rgba(255, 255, 255, 0.18);
+    backdrop-filter: none;
+  }
+
+  .brand {
+    gap: 6px;
+    color: #143242;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+  }
+
+  .brand-mark {
+    width: 26px;
+    height: 26px;
+    border-radius: 4px;
+    background: #fff;
+    color: #26638b;
+    font-size: 16px;
+  }
+
+  .view-tabs {
+    justify-self: end;
+    padding: 2px;
+    border-color: rgba(23, 59, 79, 0.28);
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.32);
+  }
+
+  .tab-button {
+    padding: 4px 6px;
+    border-radius: 2px;
+    color: #355a6d;
+    font-size: 11px;
+  }
+
+  .tab-button.active {
+    background: #fff;
+    color: #17394e;
+  }
+
+  .top-actions {
+    grid-column: 1 / -1;
+    justify-content: stretch;
+    gap: 5px;
+    margin-top: 8px;
+  }
+
+  .difficulty-label {
+    color: #31596d;
+  }
+
+  .top-actions select,
+  .top-actions .quiet-button {
+    min-height: 30px;
+    border-color: rgba(23, 59, 79, 0.28);
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.74);
+    color: #17394e;
+    font-size: 11px;
+  }
+
+  .top-actions select {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .side-panel section {
+    padding: clamp(12px, 1.8dvh, 20px);
+    border-bottom-color: rgba(23, 59, 79, 0.28);
+  }
+
+  .score-panel {
+    align-items: center;
+  }
+
+  .table-title,
+  .panel-heading,
+  .hand-number {
+    color: #254c60;
+  }
+
+  .score-grid div {
+    border-radius: 1px;
+    background: rgba(255, 255, 255, 0.72);
+  }
+
+  .score-grid span,
+  .hand-number,
+  .coach-message,
+  .engine-note,
+  .game-log li,
+  .privacy-note {
+    color: #31586a;
+  }
+
+  .score-grid strong,
+  .panel-heading strong,
+  .table-title strong {
+    color: #17394e;
+  }
+
+  .eyebrow {
+    color: #2f779d;
+  }
+
+  .coach-message {
+    margin-top: 10px;
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .engine-note {
+    margin-top: 10px;
+    padding-top: 9px;
+    border-top-color: rgba(23, 59, 79, 0.22);
+  }
+
+  .engine-note strong {
+    color: #17394e;
+  }
+
+  .icon-button {
+    width: 30px;
+    height: 30px;
+    min-height: 30px;
+    border-color: rgba(23, 59, 79, 0.28);
+    color: #1e6287;
+  }
+
+  .history-panel {
+    overflow: hidden;
+  }
+
+  .game-log {
+    max-height: none;
+    margin-top: 10px;
+    gap: 6px;
+  }
+
+  .game-log li {
+    padding-left: 8px;
+    border-left-color: rgba(23, 59, 79, 0.28);
+    font-size: 11px;
+    line-height: 1.35;
+  }
+
+  .game-log li.you {
+    border-color: #236b90;
+    color: #17394e;
+  }
+
+  .privacy-note {
+    margin: auto 14px 12px;
+    font-size: 10px;
+  }
+
+  .result-card {
+    top: 50%;
+  }
+}
+
 .game-board {
   position: relative;
   display: grid;
@@ -675,6 +915,12 @@ button.card.selected {
   align-items: end;
   justify-content: space-between;
   gap: 20px;
+}
+
+.review-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .review-header h1 {
@@ -1188,6 +1434,25 @@ button.card.selected {
 
   .option-row {
     grid-template-columns: 62px 1fr 45px;
+  }
+}
+
+/* The authored 1265 × 714 table is scaled as one surface.  On a wide
+   desktop it reaches the browser's top and bottom edges, with any extra
+   width becoming symmetric dark gutters. */
+@media (min-width: 981px) {
+  main {
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  .game-layout {
+    width: 1265px;
+    height: 714px;
+    min-height: 0;
+    margin: 0 auto;
+    transform: scale(var(--table-scale, 1));
+    transform-origin: top center;
   }
 }
 

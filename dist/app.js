@@ -6,6 +6,14 @@ const engineRequests = new Map();
 let engineActionPending = false;
 let engineAnimationToken = 0;
 
+function fitTableToViewport() {
+  // The PlayOK-like table is authored at this logical size.  Scaling the
+  // whole table, rather than stretching individual cards, preserves every
+  // card and panel proportion at any desktop browser height.
+  const scale = Math.min(window.innerWidth / 1265, window.innerHeight / 714);
+  document.documentElement.style.setProperty("--table-scale", String(scale));
+}
+
 function usingEngine() { return el.difficulty.value === "engine"; }
 function heuristicLevel() { return el.difficulty.value.replace("heuristic-", ""); }
 
@@ -1400,6 +1408,8 @@ document.querySelectorAll(".tab-button").forEach((button) => button.addEventList
 document.querySelectorAll("[data-go-game]").forEach((button) => button.addEventListener("click", () => showView("game")));
 
 const restored = restoreDecisions();
+fitTableToViewport();
+window.addEventListener("resize", fitTableToViewport);
 state = freshState();
 state.decisions = restored;
 state.decisionCounter = restored.reduce((max, decision) => Math.max(max, decision.id || 0), 0);

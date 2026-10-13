@@ -14,30 +14,9 @@
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23101916'/%3E%3Cpath d='M32 10C25 21 15 25 15 36c0 7 5 12 11 12 3 0 5-1 7-3-1 5-4 8-7 10h12c-4-2-6-5-7-10 2 2 4 3 7 3 6 0 11-5 11-12 0-11-10-15-17-26z' fill='%23f5f1e8'/%3E%3C/svg%3E"
     />
     <title>Gin Lab AI</title>
-    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./styles.css?v=table-16x9-1" />
   </head>
   <body>
-    <header class="topbar">
-      <button class="brand" id="brand-button" aria-label="새 대국 시작">
-        <span class="brand-mark">♠</span>
-        <span>GIN LAB</span>
-      </button>
-      <nav class="view-tabs" aria-label="화면 선택">
-        <button class="tab-button active" data-view="game">대국</button>
-        <button class="tab-button" data-view="review">AI 복기 <span id="review-count" class="count-badge">0</span></button>
-      </nav>
-      <div class="top-actions">
-        <label class="difficulty-label" for="difficulty">AI</label>
-        <select id="difficulty" aria-label="AI mode">
-          <option value="engine" selected>Engine AI · Monte Carlo</option>
-          <option value="heuristic-easy">Heuristic · easy</option>
-          <option value="heuristic-medium">Heuristic · medium</option>
-          <option value="heuristic-strong">Heuristic · strong</option>
-        </select>
-        <button id="new-match" class="quiet-button">새 대국</button>
-      </div>
-    </header>
-
     <main>
       <section id="game-view" class="view active" aria-label="진러미 대국">
         <div class="game-layout">
@@ -98,6 +77,26 @@
           </section>
 
           <aside class="side-panel">
+            <header class="topbar">
+              <button class="brand" id="brand-button" aria-label="새 대국 시작">
+                <span class="brand-mark">♠</span>
+                <span>GIN LAB</span>
+              </button>
+              <nav class="view-tabs" aria-label="화면 선택">
+                <button class="tab-button active" data-view="game">대국</button>
+                <button class="tab-button" data-view="review">AI 복기 <span id="review-count" class="count-badge">0</span></button>
+              </nav>
+              <div class="top-actions">
+                <label class="difficulty-label" for="difficulty">AI</label>
+                <select id="difficulty" aria-label="AI mode">
+                  <option value="engine" selected>Engine AI · Monte Carlo</option>
+                  <option value="heuristic-easy">Heuristic · easy</option>
+                  <option value="heuristic-medium">Heuristic · medium</option>
+                  <option value="heuristic-strong">Heuristic · strong</option>
+                </select>
+                <button id="new-match" class="quiet-button">새 대국</button>
+              </div>
+            </header>
             <section class="score-panel">
               <div class="table-title"><strong>table #AI</strong><span>10m</span></div>
               <div class="score-grid">
@@ -156,10 +155,13 @@
             <span class="eyebrow">DECISION REVIEW</span>
             <h1>선택이 갈린 장면만 공부하기</h1>
           </div>
-          <label class="filter-toggle">
-            <input id="difference-only" type="checkbox" checked />
-            <span>AI와 다른 선택만</span>
-          </label>
+          <div class="review-actions">
+            <label class="filter-toggle">
+              <input id="difference-only" type="checkbox" checked />
+              <span>AI와 다른 선택만</span>
+            </label>
+            <button class="quiet-button" data-go-game>대국으로</button>
+          </div>
         </div>
 
         <div class="summary-grid">
@@ -191,6 +193,6 @@
     </main>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
-    <script src="./app.js"></script>
+    <script src="./app.js?v=table-16x9-1"></script>
   </body>
 </html>
