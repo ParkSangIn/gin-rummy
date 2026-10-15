@@ -76,6 +76,7 @@ struct ReviewOption {
     equity: f64,
     ev: f64,
     recommended: bool,
+    follow_up: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -233,6 +234,27 @@ fn review_action_label(action: HumanMove, phase: Phase, upcard: Option<Card>) ->
     }
 }
 
+/// A pile take is fully known, unlike a stock draw.  Apply that one possible
+/// draw to a cloned table, then ask the engine for the ensuing discard-phase
+/// recommendation.  This makes a `take 2♠` review actionable without using
+/// the hidden stock order or changing the live game.
+fn take_discard_follow_up(session: &GameSession) -> Option<String> {
+    let player_view = session.table.view(Player::One);
+    let action = match player_view.phase() {
+        Phase::Upcard => HumanMove::Upcard(UpcardAction::Take),
+        Phase::Draw if player_view.can_take_discard() => HumanMove::Draw(DrawAction::TakeDiscard),
+        _ => return None,
+    };
+    let mut table = session.table.clone();
+    table.step(&mut HumanStrategy { action }).ok()?;
+    let next_view = table.view(Player::One);
+    let mut bot = MonteCarloBot::new(rng());
+    bot.assess(&next_view)
+        .into_iter()
+        .find(|option| option.recommended)
+        .map(|option| option.action)
+}
+
 fn record_review_decision(session: &mut GameSession, action: HumanMove) {
     let player_view = session.table.view(Player::One);
     let phase = player_view.phase();
@@ -246,6 +268,7 @@ fn record_review_decision(session: &mut GameSession, action: HumanMove) {
         .iter()
         .find(|option| option.recommended)
         .expect("assess marks exactly one recommended action");
+    let take_follow_up = take_discard_follow_up(session);
     session.review_decisions.push(ReviewDecision {
         number: session.review_decisions.len() + 1,
         hand_number: session.hand_number,
@@ -257,6 +280,11 @@ fn record_review_decision(session: &mut GameSession, action: HumanMove) {
         options: options
             .into_iter()
             .map(|option| ReviewOption {
+                follow_up: option
+                    .action
+                    .starts_with("take ")
+                    .then(|| take_follow_up.clone())
+                    .flatten(),
                 action: option.action,
                 equity: option.equity,
                 ev: option.ev,

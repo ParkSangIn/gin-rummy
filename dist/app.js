@@ -34,6 +34,7 @@ function engineReviewDecision(decision) {
     score: option.equity * 100,
     equity: option.equity,
     ev: option.ev,
+    followUp: option.follow_up,
     reason: `승률 ${(option.equity * 100).toFixed(1)}% · 기대 라운드 점수 ${option.ev.toFixed(1)}`,
   }));
   const recommended = options.find((option) => option.key === decision.recommended) || options[0];
@@ -1334,7 +1335,8 @@ function renderReview() {
       ${decision.options.map((option, index) => {
         const width = 24 + ((option.score - minimum) / range) * 76;
         const winRate = Number.isFinite(option.equity) ? option.equity * 100 : option.score;
-        return `<div class="option-row"><span>${index + 1}위 ${option.label}</span><div class="option-track"><i style="width:${width}%"></i></div><b>${winRate.toFixed(1)}%</b></div>`;
+        const followUp = option.followUp ? ` → ${option.followUp}` : "";
+        return `<div class="option-row"><span>${index + 1}위 ${option.label}${followUp}</span><div class="option-track"><i style="width:${width}%"></i></div><b>${winRate.toFixed(1)}%</b></div>`;
       }).join("")}
     </div>
     <div class="analysis-note">${reviewExplanation(decision)}</div>`;
