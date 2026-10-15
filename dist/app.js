@@ -1314,7 +1314,7 @@ function renderReview() {
         <h2>${decision.type === "draw" ? "어디서 가져올까?" : "무엇을 버릴까?"}</h2>
         <p>${decision.different ? "AI의 1순위와 다른 선택입니다." : "강한 AI와 같은 선택입니다."}</p>
       </div>
-      <span class="loss-chip">평가 손실 ${formatLoss(decision.loss)}</span>
+      <span class="loss-chip">승률 차이 ${formatLoss(decision.loss)}%p</span>
     </div>
     <div class="snapshot">
       <span class="snapshot-label">선택 당시 내 패</span>
@@ -1333,8 +1333,8 @@ function renderReview() {
     <div class="option-list">
       ${decision.options.map((option, index) => {
         const width = 24 + ((option.score - minimum) / range) * 76;
-        const rating = Math.max(0, 100 - (maximum - option.score));
-        return `<div class="option-row"><span>${index + 1}위 ${option.label}</span><div class="option-track"><i style="width:${width}%"></i></div><b>${rating.toFixed(1)}</b></div>`;
+        const winRate = Number.isFinite(option.equity) ? option.equity * 100 : option.score;
+        return `<div class="option-row"><span>${index + 1}위 ${option.label}</span><div class="option-track"><i style="width:${width}%"></i></div><b>${winRate.toFixed(1)}%</b></div>`;
       }).join("")}
     </div>
     <div class="analysis-note">${reviewExplanation(decision)}</div>`;
