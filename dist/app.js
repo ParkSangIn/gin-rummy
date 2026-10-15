@@ -1333,8 +1333,13 @@ function renderReview() {
     </div>
     <div class="option-list">
       ${decision.options.map((option, index) => {
-        const width = 24 + ((option.score - minimum) / range) * 76;
         const winRate = Number.isFinite(option.equity) ? option.equity * 100 : option.score;
+        // Engine review bars use the same fixed 0–100% scale as their
+        // labels.  A relative min/max scale made near-equal choices look
+        // misleadingly far apart.
+        const width = Number.isFinite(option.equity)
+          ? Math.max(0, Math.min(100, winRate))
+          : 24 + ((option.score - minimum) / range) * 76;
         const followUp = option.followUp ? ` → ${option.followUp}` : "";
         return `<div class="option-row"><span>${index + 1}위 ${option.label}${followUp}</span><div class="option-track"><i style="width:${width}%"></i></div><b>${winRate.toFixed(1)}%</b></div>`;
       }).join("")}
