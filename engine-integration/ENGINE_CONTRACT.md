@@ -25,7 +25,7 @@ This records every discard in order. At review time it reconstructs the public p
 
 ## AI policy
 
-The production opponent will be `MonteCarloBot`. The initial target is 128 samples per decision. The service will call `assess` at user decision points and store candidate assessments for review, while using the selected action for the AI seat.
+The production opponent is `MonteCarloBot`. Before every player decision with a genuine choice, the WASM contract calls `assess` on the player's legal `View` and appends the complete candidate ranking to the review history. The record includes the actual action, the engine recommendation, equity, expected round points, and the visible hand, but never the opponent hand or stock order. At discard decisions, the engine's candidate set includes `knock` whenever it is legal (and `big gin` when enabled), alongside discard candidates.
 
 ## Phase-one acceptance checks
 

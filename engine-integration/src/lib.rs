@@ -21,6 +21,8 @@ struct GameSession {
     game: Game,
     table: Table,
     events: Vec<GameEvent>,
+    review_decisions: Vec<ReviewDecision>,
+    hand_number: usize,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -51,6 +53,29 @@ struct GameView {
     match_over: bool,
     match_winner: Option<&'static str>,
     events: Vec<GameEvent>,
+    review_decisions: Vec<ReviewDecision>,
+}
+
+/// A player decision captured before it is applied.  These assessments use
+/// only `Table::view(Player::One)`, so the review never leaks the AI hand.
+#[derive(Debug, Serialize, Clone)]
+struct ReviewDecision {
+    number: usize,
+    hand_number: usize,
+    phase: String,
+    hand: Vec<String>,
+    actual: String,
+    recommended: String,
+    different: bool,
+    options: Vec<ReviewOption>,
+}
+
+#[derive(Debug, Serialize, Clone)]
+struct ReviewOption {
+    action: String,
+    equity: f64,
+    ev: f64,
+    recommended: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -176,7 +201,69 @@ fn view(session: &GameSession) -> GameView {
         match_winner: session.game.winner().map(player_name),
 
         events: session.events.clone(),
+        review_decisions: session.review_decisions.clone(),
     }
+}
+
+fn action_label(action: HumanMove) -> String {
+    match action {
+        HumanMove::Upcard(UpcardAction::Take) => "take upcard".into(),
+        HumanMove::Upcard(UpcardAction::Pass) => "pass".into(),
+        HumanMove::Draw(DrawAction::Stock) => "draw stock".into(),
+        HumanMove::Draw(DrawAction::TakeDiscard) => "take discard".into(),
+        // Match MonteCarloBot::assess, which renders cards with Card's
+        // display form (for example, `discard 4♥`).
+        HumanMove::Discard(card) => format!("discard {card}"),
+        HumanMove::Knock(_) => "knock".into(),
+    }
+}
+
+fn review_action_label(action: HumanMove, phase: Phase, upcard: Option<Card>) -> String {
+    match (action, phase) {
+        (HumanMove::Draw(DrawAction::TakeDiscard), Phase::Upcard) => {
+            format!("take {}", upcard.expect("upcard phase has an upcard"))
+        }
+        (HumanMove::Draw(DrawAction::TakeDiscard), _) => {
+            format!("take {}", upcard.expect("discard draw has an upcard"))
+        }
+        (HumanMove::Upcard(UpcardAction::Take), _) => {
+            format!("take {}", upcard.expect("upcard phase has an upcard"))
+        }
+        _ => action_label(action),
+    }
+}
+
+fn record_review_decision(session: &mut GameSession, action: HumanMove) {
+    let player_view = session.table.view(Player::One);
+    let phase = player_view.phase();
+    let actual = review_action_label(action, phase, player_view.upcard());
+    let mut bot = MonteCarloBot::new(rng());
+    let options = bot.assess(&player_view);
+    if options.is_empty() {
+        return;
+    }
+    let recommended = options
+        .iter()
+        .find(|option| option.recommended)
+        .expect("assess marks exactly one recommended action");
+    session.review_decisions.push(ReviewDecision {
+        number: session.review_decisions.len() + 1,
+        hand_number: session.hand_number,
+        phase: phase.to_string(),
+        hand: cards(player_view.hand()),
+        actual: actual.clone(),
+        recommended: recommended.action.clone(),
+        different: actual != recommended.action,
+        options: options
+            .into_iter()
+            .map(|option| ReviewOption {
+                action: option.action,
+                equity: option.equity,
+                ev: option.ev,
+                recommended: option.recommended,
+            })
+            .collect(),
+    });
 }
 
 /// Deal a new round while preserving the match score and next-dealer rule.
@@ -298,6 +385,8 @@ pub fn start_game() -> Result<String, JsValue> {
         game,
         table,
         events: Vec::new(),
+        review_decisions: Vec::new(),
+        hand_number: 1,
     };
     log(
         &mut session,
@@ -327,6 +416,7 @@ pub fn next_hand() -> Result<String, JsValue> {
         }
         session.table = deal_next_round(&session.game);
         session.events.clear();
+        session.hand_number += 1;
         log(
             session,
             "system",
@@ -357,6 +447,7 @@ pub fn submit_action(request_json: &str) -> Result<String, JsValue> {
             action = HumanMove::Upcard(UpcardAction::Take);
             label = "took the first upcard".into();
         }
+        record_review_decision(session, action);
         let mut human = HumanStrategy { action };
         session
             .table

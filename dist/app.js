@@ -24,6 +24,37 @@ function engineCard(code) {
   return { suit, rank, id: `${suit}${rank}` };
 }
 
+function engineReviewDecision(decision) {
+  const options = decision.options.map((option) => ({
+    key: option.action,
+    label: option.action,
+    // Equity is the engine's actual optimization target.  Use a percentage
+    // scale so the existing comparison UI can render it without pretending
+    // it is a point-score prediction.
+    score: option.equity * 100,
+    equity: option.equity,
+    ev: option.ev,
+    reason: `승률 ${(option.equity * 100).toFixed(1)}% · 기대 라운드 점수 ${option.ev.toFixed(1)}`,
+  }));
+  const recommended = options.find((option) => option.key === decision.recommended) || options[0];
+  const actual = options.find((option) => option.key === decision.actual);
+  return {
+    id: decision.number,
+    handNumber: decision.hand_number,
+    turnNumber: decision.number,
+    type: decision.phase === "discard" ? "discard" : "draw",
+    actualKey: decision.actual,
+    actualLabel: decision.actual,
+    recommendedKey: recommended.key,
+    recommendedLabel: recommended.label,
+    different: decision.different,
+    loss: Math.max(0, (recommended.score || 0) - (actual?.score || 0)),
+    options,
+    hand: decision.hand.map(engineCard),
+    context: { engine: true, phase: decision.phase },
+  };
+}
+
 function applyEngineState(snapshot) {
   state.playerHand = snapshot.player_hand.map(engineCard);
   state.aiHand = snapshot.opponent_hand ? snapshot.opponent_hand.map(engineCard) : makeDeck().slice(0, snapshot.opponent_hand_len);
@@ -53,6 +84,10 @@ function applyEngineState(snapshot) {
   } : null;
   state.aiAction = snapshot.events.at(-1)?.actor === "ai" ? snapshot.events.at(-1).action : "";
   state.log = snapshot.events.map((event) => ({ text: event.action, who: event.actor === "player" ? "you" : event.actor === "ai" ? "ai" : "system" }));
+  if (Array.isArray(snapshot.review_decisions)) {
+    state.decisions = snapshot.review_decisions.map(engineReviewDecision);
+    state.decisionCounter = state.decisions.reduce((maximum, decision) => Math.max(maximum, decision.id), 0);
+  }
 }
 
 function engineCall(method, argument) {
