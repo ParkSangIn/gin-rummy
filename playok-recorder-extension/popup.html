@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      body { width: 250px; margin: 0; padding: 16px; background: #101916; color: #f5f1e8; font: 13px system-ui, sans-serif; }
+      h1 { margin: 0 0 8px; font-size: 16px; }
+      p { color: #c8d0ca; line-height: 1.45; }
+      button { width: 100%; margin-top: 8px; border: 0; border-radius: 7px; padding: 9px; cursor: pointer; font-weight: 700; }
+      #export { background: #d9e86c; color: #142015; }
+      #clear { background: transparent; border: 1px solid #59655d; color: #f5f1e8; }
+      #status { min-height: 18px; font-size: 12px; color: #b9c5bd; }
+    </style>
+  </head>
+  <body>
+    <h1>Gin Lab 기록기</h1>
+    <p>PlayOK 진러미에서 공개된 카드·행동만 이 기기에 기록합니다. 게임 중 추천은 표시하지 않습니다.</p>
+    <p id="status">기록을 확인하는 중…</p>
+    <button id="export">기록 JSON 저장</button>
+    <button id="clear">로컬 기록 지우기</button>
+    <script src="popup.js"></script>
+  </body>
+</html>
