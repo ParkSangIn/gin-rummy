@@ -1,6 +1,12 @@
 const SESSION_KEY = "ginLabPlayOkSessions";
 const queues = new Map();
 
+function localTimestamp() {
+  const now = new Date();
+  const part = (value) => String(value).padStart(2, "0");
+  return `${now.getFullYear()}-${part(now.getMonth() + 1)}-${part(now.getDate())}_${part(now.getHours())}-${part(now.getMinutes())}-${part(now.getSeconds())}`;
+}
+
 function queue(tabId, work) {
   const previous = queues.get(tabId) || Promise.resolve();
   const next = previous.then(work, work).finally(() => {
@@ -50,7 +56,7 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
       const url = `data:application/json;charset=utf-8,${encodeURIComponent(payload)}`;
       const id = await chrome.downloads.download({
         url,
-        filename: `gin-lab-playok-${new Date().toISOString().slice(0, 10)}.json`,
+        filename: `gin-lab-playok-${localTimestamp()}.json`,
         saveAs: true,
       });
       respond({ ok: true, id });
