@@ -7,10 +7,11 @@ async function refresh() {
   const snapshots = sessions.reduce((sum, session) => sum + session.snapshots.length, 0);
   const latestSession = sessions.sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)))[0];
   const latestState = latestSession?.snapshots.at(-1);
+  const frames = sessions.reduce((sum, session) => sum + session.snapshots.filter((snapshot) => snapshot.canvas?.image).length, 0);
   const cardState = latestState
     ? latestState.semanticCardsFound ? "카드 DOM 확인됨" : "카드 DOM 미확인"
     : "PlayOK 진러미를 열면 자동 시작";
-  status.textContent = `${sessions.length}개 세션 · 상태 ${snapshots}개 · ${cardState}`;
+  status.textContent = `${sessions.length}개 세션 · 상태 ${snapshots}개 · 캔버스 프레임 ${frames}개 · ${cardState}`;
 }
 
 document.getElementById("export").addEventListener("click", async () => {

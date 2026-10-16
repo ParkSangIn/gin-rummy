@@ -3,7 +3,7 @@
   "name": "Gin Lab — PlayOK Recorder",
   "version": "0.1.0",
   "description": "Records only your visible PlayOK Gin Rummy state locally for post-game review.",
-  "permissions": ["storage", "downloads"],
+  "permissions": ["storage", "downloads", "unlimitedStorage"],
   "host_permissions": ["https://www.playok.com/*"],
   "background": { "service_worker": "background.js", "type": "module" },
   "action": { "default_popup": "popup.html", "default_title": "Gin Lab recorder" },
