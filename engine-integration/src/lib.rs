@@ -5,7 +5,7 @@
 
 use std::{cell::RefCell, str::FromStr};
 
-use gin_rummy::{best_melds, Card, Game, Phase, Player, Rules};
+use gin_rummy::{best_melds, Card, Game, Hand, Phase, Player, Round, Rules};
 use gin_rummy_engine::{
     DrawAction, MonteCarloBot, Strategy, Table, TurnAction, UpcardAction, View,
 };
@@ -77,6 +77,16 @@ struct ReviewOption {
     ev: f64,
     recommended: bool,
     follow_up: Option<String>,
+}
+
+/// Public information captured from the first-upcard decision of a recorded
+/// PlayOK hand. Unknown cards are deliberately filled with an arbitrary
+/// valid deal: MonteCarloBot only receives Player One's public `View` and
+/// re-samples those unknown cards for its evaluation.
+#[derive(Debug, Deserialize)]
+struct RecordedUpcardRequest {
+    hand: Vec<String>,
+    upcard: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -395,6 +405,61 @@ fn parse_move(request: PlayerRequest) -> Result<(HumanMove, String), String> {
 
 fn encode(value: &GameView) -> Result<String, JsValue> {
     serde_json::to_string(value).map_err(|error| JsValue::from_str(&error.to_string()))
+}
+
+/// Evaluate an imported opening decision without requiring the original
+/// hidden deck or opponent hand. This is the first bridge from a PlayOK
+/// recording into the same candidate/ranking data used by the in-app review.
+#[wasm_bindgen]
+pub fn assess_recorded_upcard(record_json: &str) -> Result<String, JsValue> {
+    let record: RecordedUpcardRequest = serde_json::from_str(record_json)
+        .map_err(|error| JsValue::from_str(&format!("invalid recording: {error}")))?;
+    if record.hand.len() != 10 {
+        return Err(JsValue::from_str("an opening hand must contain exactly 10 cards"));
+    }
+    let player_cards: Vec<Card> = record
+        .hand
+        .iter()
+        .map(|code| Card::from_str(code).map_err(|_| JsValue::from_str("invalid player card")))
+        .collect::<Result<_, _>>()?;
+    let player_hand: Hand = player_cards.iter().copied().collect();
+    if player_hand.len() != 10 {
+        return Err(JsValue::from_str("the opening hand contains a duplicate card"));
+    }
+    let upcard = Card::from_str(&record.upcard)
+        .map_err(|_| JsValue::from_str("invalid upcard"))?;
+    if player_hand.contains(upcard) {
+        return Err(JsValue::from_str("the upcard is already in the player hand"));
+    }
+    let unknown: Vec<Card> = Hand::ALL
+        .iter()
+        .filter(|card| !player_hand.contains(*card) && *card != upcard)
+        .collect();
+    let opponent_hand: Hand = unknown[..10].iter().copied().collect();
+    let stock = unknown[10..].to_vec();
+    let round = Round::from_deal(
+        Rules::new(),
+        // The player was offered the first upcard, so the opponent dealt.
+        Player::Two,
+        [player_hand, opponent_hand],
+        upcard,
+        stock,
+    )
+    .map_err(|error| JsValue::from_str(&error.to_string()))?;
+    let table = Table::new(round);
+    let mut bot = MonteCarloBot::new(rng());
+    let options: Vec<ReviewOption> = bot
+        .assess(&table.view(Player::One))
+        .into_iter()
+        .map(|option| ReviewOption {
+            action: option.action,
+            equity: option.equity,
+            ev: option.ev,
+            recommended: option.recommended,
+            follow_up: None,
+        })
+        .collect();
+    serde_json::to_string(&options).map_err(|error| JsValue::from_str(&error.to_string()))
 }
 
 /// Starts a new 100-point match with the first dealer chosen randomly.

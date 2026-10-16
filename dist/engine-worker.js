@@ -17,6 +17,7 @@ self.onmessage = async ({ data }) => {
     else if (method === "start_game") result = engine.start_game();
     else if (method === "next_hand") result = engine.next_hand();
     else if (method === "submit_action") result = engine.submit_action(argument);
+    else if (method === "assess_recorded_upcard") result = engine.assess_recorded_upcard(argument);
     else throw new Error(`unknown engine method: ${method}`);
     self.postMessage({ id, result });
   } catch (error) {
