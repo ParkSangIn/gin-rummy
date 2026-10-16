@@ -87,6 +87,18 @@ struct ReviewOption {
 struct RecordedUpcardRequest {
     hand: Vec<String>,
     upcard: String,
+    /// Scores shown on the public PlayOK board immediately before this choice.
+    /// They materially change the value of a conservative/aggressive action.
+    player_score: u16,
+    opponent_score: u16,
+    /// PlayOK's normal Gin Rummy match is to 100. Keep this explicit for
+    /// recorded games that use a different room rule.
+    #[serde(default = "default_game_target")]
+    target_score: u16,
+}
+
+fn default_game_target() -> u16 {
+    100
 }
 
 #[derive(Debug, Serialize)]
@@ -431,14 +443,22 @@ pub fn assess_recorded_upcard(record_json: &str) -> Result<String, JsValue> {
     if player_hand.contains(upcard) {
         return Err(JsValue::from_str("the upcard is already in the player hand"));
     }
+    if record.target_score == 0 {
+        return Err(JsValue::from_str("the target score must be positive"));
+    }
+    if record.player_score >= record.target_score || record.opponent_score >= record.target_score {
+        return Err(JsValue::from_str("the recorded match is already over"));
+    }
     let unknown: Vec<Card> = Hand::ALL
         .iter()
         .filter(|card| !player_hand.contains(*card) && *card != upcard)
         .collect();
     let opponent_hand: Hand = unknown[..10].iter().copied().collect();
     let stock = unknown[10..].to_vec();
+    let mut rules = Rules::new();
+    rules.game_target = record.target_score;
     let round = Round::from_deal(
-        Rules::new(),
+        rules,
         // The player was offered the first upcard, so the opponent dealt.
         Player::Two,
         [player_hand, opponent_hand],
@@ -446,7 +466,7 @@ pub fn assess_recorded_upcard(record_json: &str) -> Result<String, JsValue> {
         stock,
     )
     .map_err(|error| JsValue::from_str(&error.to_string()))?;
-    let table = Table::new(round);
+    let table = Table::new(round).scores([record.player_score, record.opponent_score]);
     let mut bot = MonteCarloBot::new(rng());
     let options: Vec<ReviewOption> = bot
         .assess(&table.view(Player::One))
