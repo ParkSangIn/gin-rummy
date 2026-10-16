@@ -2,7 +2,9 @@
   const SESSION_ID = `playok-${Date.now()}-${crypto.randomUUID()}`;
   const CARD_PATTERN = /(?:\b(?:10|[2-9AJQK])[♠♥♦♣SHDC]\b|\b(?:ace|king|queen|jack|ten|[2-9])\s+(?:of\s+)?(?:spades|hearts|diamonds|clubs)\b)/i;
   const ACTION_PATTERN = /(draw|stock|discard|pile|knock|gin|pass|take|card|deck|버림|노크|진|가져|덱|패)/i;
-  const FRAME_LIMIT = 120;
+  // Canvas redraws include animations, so leave headroom for a complete
+  // long match while still keeping the export bounded and local.
+  const FRAME_LIMIT = 500;
   let lastSignature = "";
   let lastCanvasHash = "";
   let frameCount = 0;
